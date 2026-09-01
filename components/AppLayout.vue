@@ -81,7 +81,6 @@ function onUserMenuClick({ key }: { key: string }): void {
 
 .app-header-inner {
   width: 100%;
-  max-width: 1920px;
   margin: 0 auto;
   height: 64px;
   display: flex;

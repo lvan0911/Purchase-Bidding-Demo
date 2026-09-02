@@ -228,12 +228,12 @@ onMounted(fetchList)
 
 const columns = [
   { title: '序号', key: 'index', width: 70, align: 'center' as const },
-  { title: '状态', key: 'enabled', width: 90, align: 'center' as const },
-  { title: '角色', key: 'role', width: 100, align: 'center' as const },
-  { title: '账号（手机号）', dataIndex: 'phone', width: 140 },
-  { title: '姓名', dataIndex: 'name', width: 120 },
-  { title: '邮箱', dataIndex: 'email', width: 200 },
-  { title: '公司名称', dataIndex: 'company' },
+  { title: '状态', key: 'enabled',  align: 'center' as const },
+  { title: '角色', key: 'role',  align: 'center' as const },
+  { title: '账号（手机号）', dataIndex: 'phone', align: 'center' as const },
+  { title: '姓名', dataIndex: 'name', align: 'center' as const },
+  { title: '邮箱', dataIndex: 'email', align: 'center' as const },
+  { title: '公司名称', dataIndex: 'company', align: 'center' as const },
   { title: '操作', key: 'action', width: 120, align: 'center' as const, fixed: 'right' as const },
 ]
 

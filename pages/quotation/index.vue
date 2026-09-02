@@ -79,7 +79,7 @@
             <template v-else-if="column.key === 'action'">
               <a-space>
                 <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-                <a-button type="link" size="small" @click="goEdit(record)">进入报价</a-button>
+                <a-button type="link" size="small" :disabled="record.status !== 'quoting'" @click="goEdit(record)">修改报价</a-button>
               </a-space>
             </template>
           </template>
@@ -207,7 +207,7 @@ const columns = [
   { title: '需求单号', dataIndex: 'reqNo', width: 160 , align: 'center' },
   { title: '报价单号', dataIndex: 'quoteNo', width: 160, align: 'center' },
   { title: '报价金额', key: 'totalAmount', width: 140, align: 'center'  },
-   { title: '商品数量', dataIndex: 'itemCount', width: 160, align: 'center'  },
+  //  { title: '商品数量', dataIndex: 'itemCount', width: 160, align: 'center'  },
   { title: '报价截止时间', key: 'quoteDeadline', width: 120, align: 'center' as const },
   { title: '交货日期', dataIndex: 'confirmDeliverDate', width: 130, align: 'center'  },
   // { title: '报价时间', dataIndex: 'quoteTime', width: 180 },
@@ -225,7 +225,7 @@ const detailColumns = [
   { title: '单价(￥)', key: 'unitPrice', width: 100, align: 'right' as const },
   { title: '单位', dataIndex: 'unit', width: 60, align: 'center' as const },
   { title: '规格型号', dataIndex: 'spec', width: 100 },
-  { title: '报价备注', dataIndex: 'quoteRemark' },
+  { title: '报价备注', dataIndex: 'quoteRemark', width: 160 },
   { title: '小计', key: 'subtotal', width: 120, align: 'right' as const },
 ]
 

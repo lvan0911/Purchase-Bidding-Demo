@@ -56,6 +56,16 @@ import { message } from 'ant-design-vue'
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue'
 import { authStorage, userStorage } from '@/utils/storage'
 import { login } from '@/api/auth'
+import type { UserRole } from '@/types'
+
+function roleText(role?: UserRole): string {
+  switch (role) {
+    case 'admin': return '管理员'
+    case 'purchaser': return '采购员'
+    case 'supplier': return '供应商'
+    default: return ''
+  }
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -77,8 +87,15 @@ async function handleLogin(): Promise<void> {
   try {
     const result = await login({ username: form.username, password: form.password })
     authStorage.setToken(result.token)
-    userStorage.save({ username: result.name || result.username })
-    message.success(`欢迎登录，${result.name || result.username}`)
+    userStorage.save({
+      id: result.userId,
+      username: result.username,
+      name: result.name,
+      role: result.role,
+      phone: result.phone,
+      company: result.company,
+    })
+    message.success(`欢迎登录，${result.name || result.username}（${roleText(result.role)}）`)
     const redirect = (route.query.redirect as string) || '/purchase'
     router.push(redirect)
   } finally {

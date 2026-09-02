@@ -23,6 +23,6 @@ export function getConfirmDetail(quotationId: number): Promise<Quotation> {
 }
 
 /** 确认中标 */
-export function awardQuotation(quotationId: number): Promise<void> {
-  return request.post('/confirm/award', { quotationId })
+export function awardQuotation(quotationIds: number[]): Promise<void> {
+  return request.post('/confirm/award', { quotationIds: quotationIds })
 }

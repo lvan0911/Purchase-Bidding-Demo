@@ -1,5 +1,15 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { authStorage } from '@/utils/storage'
+import { authStorage, userStorage } from '@/utils/storage'
+import type { UserRole } from '@/types'
+
+/** 扩展 meta 类型 */
+declare module 'vue-router' {
+  interface RouteMeta {
+    title?: string
+    /** 允许访问的角色，不配置则全部角色可访问 */
+    roles?: UserRole[]
+  }
+}
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -31,25 +41,25 @@ const router = createRouter({
           path: 'quotation',
           name: 'Quotation',
           component: () => import('@pages/quotation/index.vue'),
-          meta: { title: '供应商报价' },
+          meta: { title: '供应商报价', roles: ['admin', 'supplier'] },
         },
         {
           path: 'quotation/edit',
           name: 'QuotationEdit',
           component: () => import('@pages/quotation/edit.vue'),
-          meta: { title: '供应商报价' },
+          meta: { title: '供应商报价', roles: ['admin', 'supplier'] },
         },
         {
           path: 'confirm',
           name: 'Confirm',
           component: () => import('@pages/confirm/index.vue'),
-          meta: { title: '采购排名及确认' },
+          meta: { title: '采购排名及确认', roles: ['admin', 'purchaser'] },
         },
         {
           path: 'user',
           name: 'User',
           component: () => import('@pages/user/index.vue'),
-          meta: { title: '用户管理' },
+          meta: { title: '用户管理', roles: ['admin'] },
         },
       ],
     },
@@ -64,6 +74,19 @@ router.beforeEach((to) => {
   }
   if (to.path === '/login' && loggedIn) {
     return { path: '/purchase' }
+  }
+  /** 角色权限校验 */
+  const requiredRoles = to.meta.roles
+  if (requiredRoles && requiredRoles.length > 0) {
+    const role = userStorage.get()?.role
+    if (!role || !requiredRoles.includes(role)) {
+      // 无权限，根据角色跳到默认首页
+      const fallback =
+        role === 'supplier' ? '/purchase'
+        : role === 'purchaser' ? '/purchase'
+        : '/purchase'
+      return { path: fallback }
+    }
   }
   return true
 })

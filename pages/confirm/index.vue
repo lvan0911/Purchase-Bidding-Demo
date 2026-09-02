@@ -59,8 +59,9 @@
           <span class="selected-count">已选 {{ selectedRowKeys.length }} 项</span>
           <a-button
             type="primary"
-            :disabled="selectedRowKeys.length !== 1"
-            @click="handleConfirm(selectedRows[0] ?? null)"
+            :disabled="selectedRowKeys.length === 0"
+            :loading="awarding"
+            @click="handleConfirm(selectedRows)"
           >
             确认中标
           </a-button>
@@ -340,23 +341,41 @@ async function openDetail(row: RowData): Promise<void> {
   }
 }
 
-/* ---------- 确认中标 ---------- */
-function handleConfirm(row: RowData | null): void {
-  if (!row) return
-  if (!canAward(row)) {
-    message.warning('该报价单当前不可确认中标（需报价截止且未中标）')
+/* ---------- 确认中标（单个 / 批量） ---------- */
+function handleConfirm(target: RowData | RowData[]): void {
+  const rows = Array.isArray(target) ? target : [target]
+
+  if (rows.length === 0) {
+    message.warning('请先选择要确认中标的报价单')
     return
   }
+
+  // 过滤掉不可中标的行
+  const awardable = rows.filter(r => canAward(r))
+  if (awardable.length === 0) {
+    message.warning('所选报价单均不可确认中标（需报价截止且未中标）')
+    return
+  }
+  if (awardable.length !== rows.length) {
+    message.warning(`有 ${rows.length - awardable.length} 条报价单不可中标，仅处理其余 ${awardable.length} 条`)
+  }
+
+  const ids = awardable.map(r => r.id)
+  const isBatch = awardable.length > 1
+  const first = awardable[0]
+ 
   Modal.confirm({
-    title: '确认中标',
-    content: `确定选择【${row.quotePerson}】为中标供应商？中标价格 ${formatMoney(row.totalAmount)}，确定交货日期 ${row.confirmDeliverDate}。`,
+    title: isBatch ? '批量确认中标' : '确认中标',
+    content: isBatch
+      ? `确定为选中的 ${awardable.length} 条报价单确认中标？`
+      : `确定选择【${first.quotePerson}】为中标供应商？中标价格 ${formatMoney(first.totalAmount)}，确定交货日期 ${first.confirmDeliverDate}。`,
     okText: '确认中标',
     cancelText: '取消',
     onOk: async () => {
       awarding.value = true
       try {
-        await awardQuotation(row.id)
-        message.success('已确认中标')
+        await awardQuotation(ids)
+        message.success(isBatch ? `已批量确认 ${awardable.length} 条中标` : '已确认中标')
         detailOpen.value = false
         selectedRowKeys.value = []
         selectedRows.value = []

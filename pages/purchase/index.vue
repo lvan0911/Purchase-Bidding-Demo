@@ -50,7 +50,7 @@
     <!-- 列表区域 -->
     <a-card class="page-card list-card" title="历史发布的需求">
       <template #extra>
-        <a-button type="primary" @click="router.push('/purchase/edit')">
+        <a-button type="primary" @click="router.push('/purchase/edit')" v-if="userStorage.get()?.role === 'purchaser'">
           <template #icon><PlusOutlined /></template>
           新增发布需求
         </a-button>
@@ -72,11 +72,11 @@
             <a-tag :color="getStatus(record).color">{{ getStatus(record).text }}</a-tag>
           </template>
           <template v-else-if="column.key === 'action'">
-            <a-space>
-              <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-              <a-button type="link" size="small" @click="goEdit(record)">编辑</a-button>
+            <a-space v-if="userStorage.get()?.role === 'purchaser' || userStorage.get()?.role === 'admin'">
+              <a-button type="link"  size="small"  @click="openDetail(record)">详情</a-button>
+              <a-button type="link" size="small" :disabled="record.status == 'awarded'" @click="goEdit(record)">编辑</a-button>
             </a-space>
-            <a-button type="link" size="small" @click="goQuotation(record)">去报价</a-button>
+            <a-button type="link" size="small" :disabled="userStorage.get()?.role === 'admin' || record.status != 'quoting'"  v-if="userStorage.get()?.role === 'supplier' || userStorage.get()?.role === 'admin'" @click="goQuotation(record)">去报价</a-button>
           </template>
         </template>
       </a-table>
@@ -132,13 +132,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Dayjs } from 'dayjs'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import { getRequirementDetail, getRequirementPage } from '@/api/requirement'
+import { userStorage } from '@/utils/storage'
 import type { PurchaseRequirement } from '@/types'
-
 const router = useRouter()
 
 const requirements = ref<PurchaseRequirement[]>([])
@@ -202,16 +202,26 @@ async function fetchList(): Promise<void> {
 
 onMounted(fetchList)
 
-const columns = [
-  { title: '需求单号', dataIndex: 'reqNo', width: 160 },
+/** 基础列 */
+const baseColumns = [
+  { title: '需求单号', dataIndex: 'reqNo', width: 120 , align: 'center' as const},
   { title: '商品数量', key: 'itemCount', width: 90, align: 'center' as const },
-  { title: '报价截止日期', dataIndex: 'quoteDeadline', width: 180 },
-  { title: '集中交货日期', dataIndex: 'deliverDate', width: 130 },
-  { title: '创建人', dataIndex: 'creator', width: 110 },
-  { title: '创建时间', dataIndex: 'createTime', width: 180 },
+  { title: '报价截止日期', dataIndex: 'quoteDeadline', width: 180 , align: 'center' as const},
+  { title: '集中交货日期', dataIndex: 'deliverDate', width: 130 , align: 'center' as const},
+  { title: '创建人', dataIndex: 'creator', width: 110 , align: 'center' as const},
+  { title: '创建时间', dataIndex: 'createTime', width: 180 , align: 'center' as const},
   { title: '状态', key: 'status', width: 90, align: 'center' as const },
-  { title: '操作', key: 'action', width: 200, align: 'center' as const },
+  { title: '操作', key: 'action', width: 200, fixed: 'right', align: 'center' as const },
 ]
+
+/** supplier 角色隐藏创建人列 */
+const columns = computed(() => {
+  const role = userStorage.get()?.role
+  if (role === 'supplier') {
+    return baseColumns.filter((c) => c.dataIndex !== 'creator')
+  }
+  return baseColumns
+})
 
 const detailItemColumns = [
   { title: '序号', key: 'index', width: 60, align: 'center' as const },

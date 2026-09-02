@@ -138,7 +138,7 @@
         </a-form-item>
         <a-form-item label="状态" name="enabled">
           <a-radio-group v-model:value="form.enabled">
-            <a-radio :value="true">1</a-radio>
+            <a-radio :value="true">启用</a-radio>
             <a-radio :value="false">禁用</a-radio>
           </a-radio-group>
         </a-form-item>

@@ -1,6 +1,11 @@
-/** 登录用户（旧版，保留兼容） */
+/** 登录用户（存储在 localStorage） */
 export interface UserInfo {
+  id?: number
   username: string
+  name?: string
+  role?: UserRole
+  phone?: string
+  company?: string
 }
 
 /** 登录成功返回（/api/auth/login 的 data） */

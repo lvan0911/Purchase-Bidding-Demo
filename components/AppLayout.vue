@@ -13,10 +13,10 @@
           class="app-menu"
           @click="onMenuClick"
         >
-          <a-menu-item key="/purchase">采购需求发布</a-menu-item>
-          <a-menu-item key="/quotation">供应商报价</a-menu-item>
-          <a-menu-item key="/confirm">排名及采购确认</a-menu-item>
-          <a-menu-item key="/user">用户管理</a-menu-item>
+          <a-menu-item
+            v-for="m in visibleMenus"
+            :key="m.key"
+          >{{ m.label }}</a-menu-item>
         </a-menu>
         <div class="app-user">
           <a-dropdown>
@@ -44,19 +44,30 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UserOutlined } from '@ant-design/icons-vue'
-import { authStorage } from '@/utils/storage'
+import { authStorage, userStorage } from '@/utils/storage'
 import { logout } from '@/api/auth'
+import type { UserRole } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 
-const username = ref((() => {
-  try {
-    return JSON.parse(localStorage.getItem('pb_demo_user') || '{}').username || '用户'
-  } catch {
-    return '用户'
-  }
-})())
+const currentUser = userStorage.get()
+const username = ref(currentUser?.name || currentUser?.username || '用户')
+const userRole: UserRole | undefined = currentUser?.role
+
+/** 完整菜单定义 */
+interface MenuItem { key: string; label: string; roles: UserRole[] }
+const allMenus: MenuItem[] = [
+  { key: '/purchase',  label: '采购需求发布', roles: ['admin', 'purchaser', 'supplier'] },
+  { key: '/quotation', label: '供应商报价',   roles: ['admin', 'supplier'] },
+  { key: '/confirm',   label: '排名及采购确认', roles: ['admin', 'purchaser'] },
+  { key: '/user',      label: '用户管理',     roles: ['admin'] },
+]
+
+/** 当前角色可见的菜单 */
+const visibleMenus = computed(() =>
+  allMenus.filter((m) => !userRole || m.roles.includes(userRole)),
+)
 
 const selectedKeys = computed(() => [route.path])
 

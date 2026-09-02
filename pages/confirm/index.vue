@@ -184,6 +184,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Modal, message } from 'ant-design-vue'
 import { awardQuotation, getConfirmDetail, getConfirmList } from '@/api/confirm'
+
 import type { Quotation } from '@/types'
 
 type RowData = Quotation

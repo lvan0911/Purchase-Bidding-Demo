@@ -270,29 +270,29 @@ function getStatus(q: Quotation): StatusInfo {
 
 const columns = [
   { title: '排名', key: 'rank', width: 110, align: 'center' as const },
-  { title: '状态', key: 'status', width: 90, align: 'center' as const },
-  { title: '需求单号', dataIndex: 'reqNo', width: 150 },
-  { title: '报价单号', dataIndex: 'quoteNo', width: 150 },
-  { title: '供应商名称', dataIndex: 'quotePerson', width: 120 },
-  { title: '报价人', dataIndex: 'quotePerson', width: 110 },
-  { title: '报价金额', key: 'totalAmount', width: 130, align: 'right' as const },
-  { title: '集中交货日期', dataIndex: 'deliverDate', width: 120 },
-  { title: '确定交货日期', dataIndex: 'confirmDeliverDate', width: 120 },
-  { title: '报价时间', dataIndex: 'quoteTime', width: 170 },
+  { title: '状态', key: 'status', align: 'center' as const },
+  { title: '需求单号', dataIndex: 'reqNo', align: 'center' as const },
+  { title: '报价单号', dataIndex: 'quoteNo', align: 'center' as const },
+  { title: '供应商名称', dataIndex: 'quotePerson', align: 'center' as const },
+  { title: '报价人', dataIndex: 'quotePerson', align: 'center' as const },
+  { title: '报价金额', key: 'totalAmount', width: 130, align: 'center' as const },
+  { title: '集中交货日期', dataIndex: 'deliverDate', align: 'center' as const },
+  { title: '确定交货日期', dataIndex: 'confirmDeliverDate', align: 'center' as const },
+  { title: '报价时间', dataIndex: 'quoteTime', align: 'center' as const },
   { title: '操作', key: 'action', width: 140, fixed: 'right' as const },
 ]
 
 const detailColumns = [
   { title: '序号', key: 'index', width: 55, align: 'center' as const },
-  { title: '配件图号', dataIndex: 'partNo', width: 110 },
-  { title: '通用/替换号', dataIndex: 'replaceNo', width: 110 },
-  { title: '配件名称', dataIndex: 'partName', width: 130 },
-  { title: '采购数量', dataIndex: 'quantity', width: 80, align: 'right' as const },
-  { title: '单价(￥)', key: 'unitPrice', width: 100, align: 'right' as const },
-  { title: '单位', dataIndex: 'unit', width: 60, align: 'center' as const },
-  { title: '规格型号', dataIndex: 'spec', width: 100 },
-  { title: '报价备注', dataIndex: 'quoteRemark' },
-  { title: '小计', key: 'subtotal', width: 120, align: 'right' as const },
+  { title: '配件图号', dataIndex: 'partNo', align: 'center' as const },
+  { title: '通用/替换号', dataIndex: 'replaceNo', align: 'center' as const },
+  { title: '配件名称', dataIndex: 'partName', align: 'center' as const },
+  { title: '采购数量', dataIndex: 'quantity', align: 'center' as const },
+  { title: '单价(￥)', key: 'unitPrice', width: 100, align: 'center' as const },
+  { title: '单位', dataIndex: 'unit', align: 'center' as const },
+  { title: '规格型号', dataIndex: 'spec', align: 'center' as const },
+  { title: '报价备注', dataIndex: 'quoteRemark', align: 'center' as const },
+  { title: '小计', key: 'subtotal', width: 120, align: 'center' as const },
 ]
 
 /** 是否可确认中标：已截止且未中标（由后端 expired + status 控制） */

@@ -130,7 +130,6 @@
         发布需求
       </a-button>
     </div>
-
     <!-- 商品新增 / 编辑 -->
     <a-modal
       v-model:open="itemModalOpen"

@@ -55,23 +55,28 @@
     <!-- 列表区域 -->
     <a-card class="page-card list-card" title="报价单列表">
       <template #extra>
-        <a-button
-          type="primary"
-          :disabled="!selectedRow"
-          @click="handleConfirm(selectedRow)"
-        >
-          确认中标
-        </a-button>
+        <a-space>
+          <span class="selected-count">已选 {{ selectedRowKeys.length }} 项</span>
+          <a-button
+            type="primary"
+            :disabled="selectedRowKeys.length !== 1"
+            @click="handleConfirm(selectedRows[0] ?? null)"
+          >
+            确认中标
+          </a-button>
+        </a-space>
       </template>
       <a-table
         :columns="columns"
-        :data-source="filteredRows"
+        :data-source="rows"
         row-key="id"
         size="middle"
+        :loading="loading"
         :pagination="pagination"
         :scroll="{ x: 1450 }"
         :row-selection="rowSelection"
         :row-class-name="rowClassName"
+        @change="onTableChange"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'rank'">
@@ -84,10 +89,10 @@
             <span v-else class="rank-mask">-</span>
           </template>
           <template v-else-if="column.key === 'status'">
-            <a-tag :color="record.status.color">{{ record.status.text }}</a-tag>
+            <a-tag :color="getStatus(record).color">{{ getStatus(record).text }}</a-tag>
           </template>
           <template v-else-if="column.key === 'totalAmount'">
-            <span v-if="record.status.value === 'quoting'" class="rank-mask">***</span>
+            <span v-if="!record.expired" class="rank-mask">***</span>
             <span v-else :class="{ 'rank-first-text': record.rank === 1 }">
               {{ formatMoney(record.totalAmount) }}
             </span>
@@ -130,7 +135,7 @@
           <a-descriptions-item label="供应商名称">{{ detailQuote.quotePerson }}</a-descriptions-item>
           <a-descriptions-item label="报价人">{{ detailQuote.quotePerson }}</a-descriptions-item>
           <a-descriptions-item label="报价金额">
-            <template v-if="detailQuote.status.value === 'quoting'">
+            <template v-if="!detailQuote.expired">
               <span class="rank-mask">***</span>
             </template>
             <b v-else>{{ formatMoney(detailQuote.totalAmount) }}</b>
@@ -142,7 +147,7 @@
         </a-descriptions>
         <a-table
           :columns="detailColumns"
-          :data-source="detailQuote.items"
+          :data-source="detailQuote.items ?? []"
           :pagination="false"
           row-key="id"
           size="small"
@@ -164,6 +169,7 @@
         <a-button
           v-if="detailQuote && canAward(detailQuote)"
           type="primary"
+          :loading="awarding"
           @click="handleConfirm(detailQuote)"
         >
           确认中标
@@ -174,19 +180,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { Modal, message } from 'ant-design-vue'
-import dayjs from 'dayjs'
-import { awardStorage, quotationStorage } from '@/utils/storage'
-import type { AwardResult, Quotation } from '@/types'
+import { awardQuotation, getConfirmDetail, getConfirmList } from '@/api/confirm'
+import type { Quotation } from '@/types'
 
-interface RowData extends Quotation {
-  status: { value: string; text: string; color: string }
-  /** 金额排名：仅已截止需求有效，截止前为 null（不排名） */
-  rank: number | null
-}
+type RowData = Quotation
 
-const quotations = ref<Quotation[]>(quotationStorage.list())
+const rows = ref<RowData[]>([])
+const loading = ref(false)
+const awarding = ref(false)
 
 const query = reactive({
   reqNo: '',
@@ -195,65 +198,72 @@ const query = reactive({
   status: undefined as string | undefined,
 })
 
-/** 报价截止前不进行排名，采购方不可查看报价结果 */
-function isExpired(quoteDeadline: string): boolean {
-  return dayjs().isAfter(dayjs(quoteDeadline))
-}
-
-/** 构造列表行：状态 + 排名（截止前不排名） */
-const rows = computed<RowData[]>(() => {
-  // 已截止需求的报价单：按需求分组后按金额从低到高计算排名
-  const rankMap = new Map<string, number>()
-  const grouped = new Map<string, Quotation[]>()
-  quotations.value.forEach((q) => {
-    if (!isExpired(q.quoteDeadline)) return
-    const arr = grouped.get(q.requirementId) ?? []
-    arr.push(q)
-    grouped.set(q.requirementId, arr)
-  })
-  grouped.forEach((list) => {
-    list
-      .slice()
-      .sort((a, b) => a.totalAmount - b.totalAmount)
-      .forEach((q, i) => rankMap.set(q.id, i + 1))
-  })
-
-  return quotations.value.map((q) => {
-    const expired = isExpired(q.quoteDeadline)
-    const awarded = awardStorage.getByRequirement(q.requirementId)?.quoteNo === q.quoteNo
-    let status: RowData['status']
-    if (!expired) {
-      status = { value: 'quoting', text: '报价中', color: 'blue' }
-    } else if (awarded) {
-      status = { value: 'awarded', text: '已中标', color: 'green' }
-    } else {
-      status = { value: 'pending', text: '待确认', color: 'orange' }
-    }
-    return {
-      ...q,
-      status,
-      rank: expired ? rankMap.get(q.id) ?? null : null,
-    }
-  })
-})
-
-/** 新的报价单排在前 */
-const filteredRows = computed(() => {
-  return rows.value
-    .filter((r) => {
-      if (query.reqNo && !r.reqNo.includes(query.reqNo.trim())) return false
-      if (query.quoteNo && !r.quoteNo.includes(query.quoteNo.trim())) return false
-      if (query.supplier && !r.quotePerson.includes(query.supplier.trim())) return false
-      if (query.status && r.status.value !== query.status) return false
-      return true
-    })
-    .sort((a, b) => b.quoteTime.localeCompare(a.quoteTime))
-})
-
-const pagination = {
+const pagination = reactive({
+  current: 1,
   pageSize: 10,
+  total: 0,
   showSizeChanger: true,
   showTotal: (total: number) => `共 ${total} 条`,
+})
+
+async function fetchList(): Promise<void> {
+  loading.value = true
+  try {
+    const res = await getConfirmList({
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
+      reqNo: query.reqNo.trim() || undefined,
+      quoteNo: query.quoteNo.trim() || undefined,
+      supplier: query.supplier.trim() || undefined,
+      status: query.status,
+    })
+    rows.value = res.list ?? []
+    pagination.total = res.total ?? 0
+  } finally {
+    loading.value = false
+  }
+}
+
+function onTableChange(p: { current?: number; pageSize?: number }): void {
+  if (p.pageSize && p.pageSize !== pagination.pageSize) {
+    pagination.pageSize = p.pageSize
+    pagination.current = 1
+  } else if (p.current) {
+    pagination.current = p.current
+  }
+  fetchList()
+}
+
+function handleSearch(): void {
+  pagination.current = 1
+  fetchList()
+}
+
+function handleReset(): void {
+  query.reqNo = ''
+  query.quoteNo = ''
+  query.supplier = ''
+  query.status = undefined
+  pagination.current = 1
+  fetchList()
+}
+
+interface StatusInfo {
+  text: string
+  color: string
+}
+
+function getStatus(q: Quotation): StatusInfo {
+  switch (q.status) {
+    case 'awarded':
+      return { text: '已中标', color: 'green' }
+    case 'pending':
+      return { text: '待确认', color: 'orange' }
+    case 'expired':
+      return { text: '已截止', color: 'red' }
+    default:
+      return { text: '报价中', color: 'blue' }
+  }
 }
 
 const columns = [
@@ -283,9 +293,9 @@ const detailColumns = [
   { title: '小计', key: 'subtotal', width: 120, align: 'right' as const },
 ]
 
-/** 是否可确认中标：已截止且未中标 */
+/** 是否可确认中标：已截止且未中标（由后端 expired + status 控制） */
 function canAward(row: RowData): boolean {
-  return row.status.value === 'pending'
+  return !!row.expired && row.status === 'pending'
 }
 
 function rowClassName(record: RowData): string {
@@ -293,30 +303,20 @@ function rowClassName(record: RowData): string {
 }
 
 function formatMoney(value: number): string {
-  return `¥ ${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
+  return `¥ ${(value ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
 }
 
-function handleSearch(): void {
-  // 响应式过滤即时生效
-}
-
-function handleReset(): void {
-  query.reqNo = ''
-  query.quoteNo = ''
-  query.supplier = ''
-  query.status = undefined
-}
-
-/* ---------- 行勾选（单选） ---------- */
+/* ---------- 行勾选（多选） ---------- */
 const selectedRowKeys = ref<(string | number)[]>([])
-const selectedRow = ref<RowData | null>(null)
+const selectedRows = ref<RowData[]>([])
 
 const rowSelection = computed(() => ({
-  type: 'radio' as const,
+  type: 'checkbox' as const,
   selectedRowKeys: selectedRowKeys.value,
+  preserveSelectedRowKeys: true,
   onChange: (keys: (string | number)[], rows: RowData[]) => {
     selectedRowKeys.value = keys
-    selectedRow.value = rows[0] ?? null
+    selectedRows.value = rows
   },
   getCheckboxProps: (record: RowData) => ({
     disabled: !canAward(record),
@@ -326,10 +326,18 @@ const rowSelection = computed(() => ({
 /* ---------- 详情 ---------- */
 const detailOpen = ref(false)
 const detailQuote = ref<RowData | null>(null)
+const detailLoading = ref(false)
 
-function openDetail(row: RowData): void {
-  detailQuote.value = row
+async function openDetail(row: RowData): Promise<void> {
   detailOpen.value = true
+  detailQuote.value = null
+  detailLoading.value = true
+  try {
+    const detail = await getConfirmDetail(row.id)
+    detailQuote.value = detail
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 /* ---------- 确认中标 ---------- */
@@ -344,27 +352,25 @@ function handleConfirm(row: RowData | null): void {
     content: `确定选择【${row.quotePerson}】为中标供应商？中标价格 ${formatMoney(row.totalAmount)}，确定交货日期 ${row.confirmDeliverDate}。`,
     okText: '确认中标',
     cancelText: '取消',
-    onOk() {
-      const result: AwardResult = {
-        requirementId: row.requirementId,
-        reqNo: row.reqNo,
-        quoteNo: row.quoteNo,
-        supplierName: row.quotePerson,
-        awardPrice: row.totalAmount,
-        confirmDeliverDate: row.confirmDeliverDate,
-        confirmTime: new Date().toLocaleString(),
-        confirmed: true,
+    onOk: async () => {
+      awarding.value = true
+      try {
+        await awardQuotation(row.id)
+        message.success('已确认中标')
+        detailOpen.value = false
+        selectedRowKeys.value = []
+        selectedRows.value = []
+        await fetchList()
+      } finally {
+        awarding.value = false
       }
-      awardStorage.save(result)
-      message.success('已确认中标')
-      detailOpen.value = false
-      selectedRowKeys.value = []
-      selectedRow.value = null
-      // 刷新状态展示
-      quotations.value = quotationStorage.list()
     },
   })
 }
+
+onMounted(() => {
+  fetchList()
+})
 </script>
 
 <style scoped>

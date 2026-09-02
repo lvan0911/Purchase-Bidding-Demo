@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
 import type { AwardResult, PurchaseRequirement, Quotation, UserAccount, UserInfo } from '@/types'
 
+const KEY_TOKEN = 'pb_demo_token'
 const KEY_USER = 'pb_demo_user'
 const KEY_REQUIREMENTS = 'pb_demo_requirements'
 const KEY_QUOTATIONS = 'pb_demo_quotations'
@@ -19,6 +20,20 @@ function read<T>(key: string): T | null {
 
 function write(key: string, value: unknown): void {
   localStorage.setItem(key, JSON.stringify(value))
+}
+
+/** 认证存储（token） */
+export const authStorage = {
+  getToken(): string {
+    return localStorage.getItem(KEY_TOKEN) ?? ''
+  },
+  setToken(token: string): void {
+    localStorage.setItem(KEY_TOKEN, token)
+  },
+  clear(): void {
+    localStorage.removeItem(KEY_TOKEN)
+    localStorage.removeItem(KEY_USER)
+  },
 }
 
 /** 登录用户存储 */

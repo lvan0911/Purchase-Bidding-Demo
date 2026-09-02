@@ -183,82 +183,73 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
-import {
-  genQuoteNo,
-  quotationStorage,
-  requirementStorage,
-  userStorage,
-} from '@/utils/storage'
-import type { PurchaseRequirement, QuoteItem, Quotation } from '@/types'
+import { getEditData, submitQuotation } from '@/api/quotation'
+import type { QuoteItem } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 
-const requirementId = (route.query.requirementId as string) || ''
-const username = ref(userStorage.get()?.username ?? '')
+const requirementId = Number(route.query.requirementId) || 0
+const loading = ref(false)
 
-/** 获取当前需求：优先按 URL 参数，参数缺失或无效时取最近发布且未截止的需求 */
-function resolveRequirement(): PurchaseRequirement | null {
-  if (requirementId) {
-    const r = requirementStorage.getById(requirementId)
-    if (r) return r
-  }
-  return (
-    requirementStorage
-      .list()
-      .filter((r) => dayjs().isBefore(dayjs(r.quoteDeadline)))
-      .sort((a, b) => b.createTime.localeCompare(a.createTime))[0] ?? null
-  )
-}
+const requirement = ref<{
+  reqNo: string
+  quoteDeadline: string
+  deliverDate: string
+  remark: string
+} | null>(null)
 
-const requirement = ref<PurchaseRequirement | null>(resolveRequirement())
-
-/** 当前报价人（默认登录用户）已有报价单，用于回填与多次编辑 */
-const myQuote = ref(
-  requirement.value
-    ? quotationStorage.findByPersonAndRequirement(username.value, requirement.value.id)
-    : null,
-)
-
-const quoteNo = ref(myQuote.value?.quoteNo ?? (requirement.value ? genQuoteNo() : ''))
-const quoteTime = ref(myQuote.value?.quoteTime ?? '')
-const modifier = ref(myQuote.value?.modifier ?? '')
-const modifyTime = ref(myQuote.value?.modifyTime ?? '')
+const quoteNo = ref('')
+const quoteTime = ref('')
+const modifier = ref('')
+const modifyTime = ref('')
 
 const form = reactive({
-  confirmDeliverDate: (myQuote.value?.confirmDeliverDate
-    ? dayjs(myQuote.value.confirmDeliverDate)
-    : undefined) as Dayjs | undefined,
-  quotePerson: myQuote.value?.quotePerson ?? username.value,
-  quoteRemark: myQuote.value?.quoteRemark ?? '',
+  confirmDeliverDate: undefined as Dayjs | undefined,
+  quotePerson: '',
+  quoteRemark: '',
 })
 
 const items = ref<QuoteItem[]>([])
-function initItems(): void {
-  if (!requirement.value) return
-  items.value = requirement.value.items.map((ri) => {
-    const existed = myQuote.value?.items.find((ei) => ei.requirementItemId === ri.id)
-    return {
-      id: ri.id,
-      requirementItemId: ri.id,
-      partNo: ri.partNo,
-      replaceNo: ri.replaceNo,
-      partName: ri.partName,
-      quantity: ri.quantity,
-      unit: ri.unit,
-      spec: ri.spec,
-      purchaseRemark: ri.purchaseRemark,
-      unitPrice: existed?.unitPrice ?? null,
-      quoteRemark: existed?.quoteRemark ?? '',
+
+/** 初始化：调后端获取需求详情 + 已有报价 */
+onMounted(async () => {
+  if (!requirementId) return
+  loading.value = true
+  try {
+    const data = await getEditData(requirementId)
+    console.log('[getEditData response]', data)
+    requirement.value = {
+      reqNo: data.reqNo,
+      quoteDeadline: data.quoteDeadline,
+      deliverDate: data.deliverDate,
+      remark: data.remark,
     }
-  })
-}
-initItems()
+    // 后端返回的 items 包含已有报价（price=0 表示未报价）
+    items.value = data.items.map((it) => ({
+      id: it.requirementItemId,
+      requirementItemId: it.requirementItemId,
+      partNo: it.partNo,
+      replaceNo: '',
+      partName: it.partName,
+      quantity: it.quantity,
+      unit: it.unit,
+      spec: it.spec,
+      purchaseRemark: it.purchaseRemark,
+      unitPrice: it.price > 0 ? it.price : null,
+      moq: it.moq,
+      quoted: it.quoted,
+      quoteRemark: '',
+    }))
+  } finally {
+    loading.value = false
+  }
+})
 
 const isExpired = computed(
   () => !!requirement.value && dayjs().isAfter(dayjs(requirement.value.quoteDeadline)),
@@ -335,7 +326,7 @@ function openDetail(item: QuoteItem): void {
 const submitting = ref(false)
 
 async function handleSubmit(): Promise<void> {
-  if (!requirement.value) return
+  if (!requirementId) return
   if (!form.confirmDeliverDate) {
     message.error('请选择确定交货日期')
     return
@@ -351,36 +342,33 @@ async function handleSubmit(): Promise<void> {
       return
     }
   }
-  const existing = quotationStorage.findByPersonAndRequirement(
-    form.quotePerson.trim(),
-    requirement.value.id,
-  )
   submitting.value = true
-  const quotation: Quotation = {
-    id: existing?.id ?? `QUO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    quoteNo: existing?.quoteNo ?? quoteNo.value,
-    requirementId: requirement.value.id,
-    reqNo: requirement.value.reqNo,
-    quoteDeadline: requirement.value.quoteDeadline,
-    deliverDate: requirement.value.deliverDate,
-    confirmDeliverDate: form.confirmDeliverDate.format('YYYY-MM-DD'),
+  const payload = {
+    requirementId,
     quotePerson: form.quotePerson.trim(),
-    quoteTime: existing?.quoteTime ?? new Date().toLocaleString(),
-    modifier: username.value,
-    modifyTime: new Date().toLocaleString(),
-    remark: requirement.value.remark,
-    quoteRemark: form.quoteRemark.trim(),
-    items: items.value.map((i) => ({ ...i })),
-    totalAmount: totalAmount.value,
+    confirmDeliverDate: form.confirmDeliverDate.format('YYYY-MM-DD'),
+    quoteRemark: form.quoteRemark.trim() || undefined,
+    items: items.value.map((i) => ({
+      id: i.id,
+      requirementItemId: i.requirementItemId,
+      partNo: i.partNo,
+      replaceNo: i.replaceNo,
+      partName: i.partName,
+      quantity: i.quantity,
+      unit: i.unit,
+      spec: i.spec,
+      purchaseRemark: i.purchaseRemark,
+      unitPrice: i.unitPrice ?? undefined,
+    })),
   }
-  quotationStorage.save(quotation)
-  quoteNo.value = quotation.quoteNo
-  quoteTime.value = quotation.quoteTime
-  modifier.value = quotation.modifier
-  modifyTime.value = quotation.modifyTime
-  submitting.value = false
-  message.success(existing ? '报价已更新（截止日期前可多次编辑）' : '报价提交成功')
-  router.push('/quotation')
+
+  try {
+    await submitQuotation(payload)
+    message.success('报价提交成功')
+    router.push('/quotation')
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

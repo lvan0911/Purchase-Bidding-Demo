@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { userStorage } from '@/utils/storage'
+import { authStorage } from '@/utils/storage'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -58,7 +58,7 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   document.title = `${String(to.meta.title ?? '')} - 松林科技采购竞价系统`
-  const loggedIn = userStorage.get() !== null
+  const loggedIn = !!authStorage.getToken()
   if (to.path !== '/login' && !loggedIn) {
     return { path: '/login', query: { redirect: to.fullPath } }
   }

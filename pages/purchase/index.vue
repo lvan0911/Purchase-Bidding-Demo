@@ -57,15 +57,16 @@
       </template>
       <a-table
         :columns="columns"
-        :data-source="filteredList"
+        :data-source="requirements"
         row-key="id"
         size="middle"
+        :loading="loading"
         :pagination="pagination"
         :scroll="{ x: 1000 }"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'itemCount'">
-            {{ record.items.length }}
+            {{ record.itemCount ?? record.items?.length ?? 0 }}
           </template>
           <template v-else-if="column.key === 'status'">
             <a-tag :color="getStatus(record).color">{{ getStatus(record).text }}</a-tag>
@@ -75,6 +76,7 @@
               <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
               <a-button type="link" size="small" @click="goEdit(record)">编辑</a-button>
             </a-space>
+            <a-button type="link" size="small" @click="goQuotation(record)">去报价</a-button>
           </template>
         </template>
       </a-table>
@@ -106,7 +108,7 @@
           <a-descriptions-item>
             <a-table
               :columns="detailItemColumns"
-              :data-source="detail.items"
+              :data-source="detail.items ?? []"
               row-key="id"
               size="small"
               :pagination="false"
@@ -130,17 +132,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { PlusOutlined } from '@ant-design/icons-vue'
-import { awardStorage, requirementStorage } from '@/utils/storage'
+import { getRequirementDetail, getRequirementPage } from '@/api/requirement'
 import type { PurchaseRequirement } from '@/types'
 
 const router = useRouter()
 
-const requirements = ref<PurchaseRequirement[]>(requirementStorage.list())
+const requirements = ref<PurchaseRequirement[]>([])
+const loading = ref(false)
 
 const query = reactive({
   reqNo: '',
@@ -156,46 +158,49 @@ interface StatusInfo {
 }
 
 function getStatus(req: PurchaseRequirement): StatusInfo {
-  if (awardStorage.getByRequirement(req.id)) {
-    return { value: 'awarded', text: '已中标', color: 'green' }
+  switch (req.status) {
+    case 'awarded':
+      return { value: 'awarded', text: '已中标', color: 'green' }
+    case 'expired':
+      return { value: 'expired', text: '已截止', color: 'red' }
+    default:
+      return { value: 'quoting', text: '报价中', color: 'blue' }
   }
-  if (dayjs().isAfter(dayjs(req.quoteDeadline))) {
-    return { value: 'expired', text: '已截止', color: 'red' }
-  }
-  return { value: 'quoting', text: '报价中', color: 'blue' }
 }
 
-const filteredList = computed(() => {
-  return requirements.value
-    .filter((r) => {
-      if (query.reqNo && !r.reqNo.includes(query.reqNo.trim())) return false
-      if (query.keyword) {
-        const kw = query.keyword.trim()
-        const hit = r.items.some(
-          (i) => i.partNo.includes(kw) || i.partName.includes(kw),
-        )
-        if (!hit) return false
-      }
-      if (query.deadlineRange?.length === 2) {
-        const d = dayjs(r.quoteDeadline)
-        if (
-          d.isBefore(dayjs(query.deadlineRange[0]).startOf('day')) ||
-          d.isAfter(dayjs(query.deadlineRange[1]).endOf('day'))
-        ) {
-          return false
-        }
-      }
-      if (query.status && getStatus(r).value !== query.status) return false
-      return true
-    })
-    .sort((a, b) => b.createTime.localeCompare(a.createTime))
-})
-
-const pagination = {
+const pagination = reactive({
+  current: 1,
   pageSize: 10,
+  total: 0,
   showSizeChanger: true,
   showTotal: (total: number) => `共 ${total} 条`,
+  onChange: (page: number, pageSize: number) => {
+    pagination.current = page
+    pagination.pageSize = pageSize
+    fetchList()
+  },
+})
+
+async function fetchList(): Promise<void> {
+  loading.value = true
+  try {
+    const res = await getRequirementPage({
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
+      reqNo: query.reqNo || undefined,
+      keyword: query.keyword || undefined,
+      deadlineStart: query.deadlineRange?.[0]?.format('YYYY-MM-DD'),
+      deadlineEnd: query.deadlineRange?.[1]?.format('YYYY-MM-DD'),
+      status: query.status as PurchaseRequirement['status'] | undefined,
+    })
+    requirements.value = res.list
+    pagination.total = res.total
+  } finally {
+    loading.value = false
+  }
 }
+
+onMounted(fetchList)
 
 const columns = [
   { title: '需求单号', dataIndex: 'reqNo', width: 160 },
@@ -205,30 +210,32 @@ const columns = [
   { title: '创建人', dataIndex: 'creator', width: 110 },
   { title: '创建时间', dataIndex: 'createTime', width: 180 },
   { title: '状态', key: 'status', width: 90, align: 'center' as const },
-  { title: '操作', key: 'action', width: 120, align: 'center' as const },
+  { title: '操作', key: 'action', width: 200, align: 'center' as const },
 ]
 
 const detailItemColumns = [
   { title: '序号', key: 'index', width: 60, align: 'center' as const },
-  { title: '配件图号', dataIndex: 'partNo', width: 130 },
-  { title: '通用/替换号', dataIndex: 'replaceNo', width: 130 },
-  { title: '配件名称', dataIndex: 'partName', width: 150 },
-  { title: '采购数量', dataIndex: 'quantity', width: 100, align: 'right' as const },
+  { title: '配件图号', dataIndex: 'partNo', width: 130 , align: 'center' as const},
+  { title: '通用/替换号', dataIndex: 'replaceNo', width: 130, align: 'center' as const },
+  { title: '配件名称', dataIndex: 'partName', width: 150, align: 'center' as const },
+  { title: '采购数量', dataIndex: 'quantity', width: 100, align: 'center' as const },
   { title: '单位', dataIndex: 'unit', width: 70, align: 'center' as const },
-  { title: '规格型号', dataIndex: 'spec', width: 130 },
-  { title: '采购备注', dataIndex: 'purchaseRemark' },
+  { title: '规格型号', dataIndex: 'spec', width: 130 , align: 'center' as const},
+  { title: '采购备注', dataIndex: 'purchaseRemark', width: 150, align: 'center' as const },
 ]
 
 const detailOpen = ref(false)
 const detail = ref<PurchaseRequirement | null>(null)
 
-function openDetail(req: PurchaseRequirement): void {
-  detail.value = req
+async function openDetail(req: PurchaseRequirement): Promise<void> {
+  // 调后端获取完整详情（含 items）
+  detail.value = await getRequirementDetail(req.id)
   detailOpen.value = true
 }
 
 function handleSearch(): void {
-  // 响应式过滤即时生效
+  pagination.current = 1
+  fetchList()
 }
 
 function handleReset(): void {
@@ -236,10 +243,16 @@ function handleReset(): void {
   query.keyword = ''
   query.deadlineRange = undefined
   query.status = undefined
+  pagination.current = 1
+  fetchList()
 }
 
 function goEdit(req: PurchaseRequirement): void {
   router.push(`/purchase/edit?id=${req.id}`)
+}
+
+function goQuotation(req: PurchaseRequirement): void {
+  router.push(`/quotation/edit?requirementId=${req.id}`)
 }
 </script>
 

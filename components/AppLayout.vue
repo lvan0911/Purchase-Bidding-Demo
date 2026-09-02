@@ -44,12 +44,19 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UserOutlined } from '@ant-design/icons-vue'
-import { userStorage } from '@/utils/storage'
+import { authStorage } from '@/utils/storage'
+import { logout } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
 
-const username = ref(userStorage.get()?.username ?? '用户')
+const username = ref((() => {
+  try {
+    return JSON.parse(localStorage.getItem('pb_demo_user') || '{}').username || '用户'
+  } catch {
+    return '用户'
+  }
+})())
 
 const selectedKeys = computed(() => [route.path])
 
@@ -57,9 +64,14 @@ function onMenuClick({ key }: { key: string }): void {
   router.push(key)
 }
 
-function onUserMenuClick({ key }: { key: string }): void {
+async function onUserMenuClick({ key }: { key: string }): Promise<void> {
   if (key === 'logout') {
-    userStorage.clear()
+    try {
+      await logout()
+    } catch {
+      // 退出接口失败不影响前端清除
+    }
+    authStorage.clear()
     message.success('已退出登录')
     router.push('/login')
   }

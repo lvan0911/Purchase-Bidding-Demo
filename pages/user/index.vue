@@ -65,9 +65,10 @@
       </template>
       <a-table
         :columns="columns"
-        :data-source="filteredList"
+        :data-source="accounts"
         row-key="id"
         size="middle"
+        :loading="loading"
         :pagination="pagination"
         :scroll="{ x: 1000 }"
       >
@@ -137,9 +138,15 @@
         </a-form-item>
         <a-form-item label="状态" name="enabled">
           <a-radio-group v-model:value="form.enabled">
-            <a-radio :value="true">启用</a-radio>
+            <a-radio :value="true">1</a-radio>
             <a-radio :value="false">禁用</a-radio>
           </a-radio-group>
+        </a-form-item>
+        <a-form-item label="密码" name="password">
+          <a-input-password
+            v-model:value="form.password"
+            :placeholder="editing ? '留空表示不修改密码' : '请输入初始密码（默认 123456）'"
+          />
         </a-form-item>
         <a-form-item label="邮箱" name="email">
           <a-input v-model:value="form.email" placeholder="请输入邮箱（必填）" allow-clear />
@@ -153,19 +160,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
-import { accountStorage } from '@/utils/storage'
+import { createUser, deleteUser, getUserPage, isPhoneExists, updateUser } from '@/api/user'
 import type { UserAccount, UserRole } from '@/types'
 
-const accounts = ref<UserAccount[]>(accountStorage.list())
+const accounts = ref<UserAccount[]>([])
+const loading = ref(false)
 
 const query = reactive({
   phone: '',
   name: '',
   role: undefined as UserRole | undefined,
-  enabled: undefined as boolean | undefined,
+  enabled: undefined as number | undefined,
 })
 
 const roleTextMap: Record<UserRole, string> = {
@@ -185,22 +193,38 @@ function roleColor(role: UserRole): string {
   return roleColorMap[role] ?? 'default'
 }
 
-const filteredList = computed(() => {
-  return accounts.value.filter((a) => {
-    if (query.phone && !a.phone.includes(query.phone.trim())) return false
-    if (query.name && !a.name.includes(query.name.trim())) return false
-    if (query.role && a.role !== query.role) return false
-    if (query.enabled !== undefined && a.enabled !== query.enabled) return false
-    return true
-  })
-})
-
 const pagination = reactive({
   current: 1,
   pageSize: 10,
+  total: 0,
   showSizeChanger: true,
   showTotal: (total: number) => `共 ${total} 条`,
+  onChange: (page: number, pageSize: number) => {
+    pagination.current = page
+    pagination.pageSize = pageSize
+    fetchList()
+  },
 })
+
+async function fetchList(): Promise<void> {
+  loading.value = true
+  try {
+    const res = await getUserPage({
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
+      phone: query.phone || undefined,
+      name: query.name || undefined,
+      role: query.role,
+      enabled: query.enabled,
+    })
+    accounts.value = res.list
+    pagination.total = res.total
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchList)
 
 const columns = [
   { title: '序号', key: 'index', width: 70, align: 'center' as const },
@@ -214,7 +238,8 @@ const columns = [
 ]
 
 function handleSearch(): void {
-  // 响应式过滤即时生效
+  pagination.current = 1
+  fetchList()
 }
 
 function handleReset(): void {
@@ -222,6 +247,8 @@ function handleReset(): void {
   query.name = ''
   query.role = undefined
   query.enabled = undefined
+  pagination.current = 1
+  fetchList()
 }
 
 /* ---------- 新增 / 编辑 ---------- */
@@ -229,13 +256,14 @@ const modalOpen = ref(false)
 const editing = ref<UserAccount | null>(null)
 const formRef = ref()
 const form = reactive({
-  id: '',
+  id: 0 as number,
   phone: '',
   name: '',
   email: '',
   company: '',
   role: undefined as UserRole | undefined,
-  enabled: true,
+  enabled: 1 as number,
+  password: '',
 })
 
 const rules = {
@@ -258,13 +286,14 @@ const rules = {
 
 function openModal(account?: UserAccount): void {
   editing.value = account ?? null
-  form.id = account?.id ?? `USER-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  form.id = account?.id ?? 0
   form.phone = account?.phone ?? ''
   form.name = account?.name ?? ''
   form.email = account?.email ?? ''
   form.company = account?.company ?? ''
   form.role = account?.role ?? undefined
-  form.enabled = account?.enabled ?? true
+  form.enabled = account?.enabled ?? 1
+  form.password = ''
   modalOpen.value = true
 }
 
@@ -283,30 +312,51 @@ async function handleSave(): Promise<void> {
     message.error('请选择角色')
     return
   }
-  if (accountStorage.phoneExists(form.phone.trim(), form.id)) {
+  // 手机号唯一性校验（调后端接口）
+  const exists = await isPhoneExists(form.phone.trim(), editing.value?.id)
+  if (exists) {
     message.error('该手机号已被占用')
     return
   }
-  const account: UserAccount = {
-    id: form.id,
-    phone: form.phone.trim(),
-    name: form.name.trim(),
-    email: form.email.trim(),
-    company: form.company.trim(),
-    role: form.role,
-    enabled: form.enabled,
-    createTime: editing.value?.createTime ?? new Date().toLocaleString(),
+  try {
+    if (editing.value) {
+      await updateUser(editing.value.id, {
+        phone: form.phone.trim(),
+        name: form.name.trim(),
+        email: form.email.trim(),
+        company: form.company.trim(),
+        role: form.role,
+        enabled: form.enabled,
+        ...(form.password ? { password: form.password } : {}),
+      })
+      message.success('用户已更新')
+    } else {
+      await createUser({
+        phone: form.phone.trim(),
+        name: form.name.trim(),
+        email: form.email.trim(),
+        company: form.company.trim(),
+        role: form.role,
+        enabled: form.enabled,
+        ...(form.password ? { password: form.password } : {}),
+      })
+      message.success('用户已新增')
+    }
+    modalOpen.value = false
+    fetchList()
+  } catch {
+    // 错误已在拦截器中提示
   }
-  accountStorage.save(account)
-  accounts.value = accountStorage.list()
-  modalOpen.value = false
-  message.success(editing.value ? '用户已更新' : '用户已新增')
 }
 
-function removeUser(account: UserAccount): void {
-  accountStorage.remove(account.id)
-  accounts.value = accountStorage.list()
-  message.success('用户已删除')
+async function removeUser(account: UserAccount): Promise<void> {
+  try {
+    await deleteUser(account.id)
+    message.success('用户已删除')
+    fetchList()
+  } catch {
+    // 错误已在拦截器中提示
+  }
 }
 </script>
 

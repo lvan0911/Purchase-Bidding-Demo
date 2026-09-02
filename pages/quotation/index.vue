@@ -48,32 +48,42 @@
 
     <!-- 列表区域 -->
     <a-card class="page-card list-card" title="我的历史报价单据">
-      <template #extra>
-        <a-button type="primary" @click="openPending">待报价需求</a-button>
-      </template>
       <a-table
-        :columns="columns"
-        :data-source="filteredList"
-        row-key="id"
-        size="middle"
-        :pagination="pagination"
-        :scroll="{ x: 1100 }"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'totalAmount'">
-            {{ formatMoney(record.totalAmount) }}
+          :columns="columns"
+          :data-source="quotations"
+          row-key="id"
+          size="middle"
+          :loading="loading"
+          :pagination="pagination"
+          :scroll="{ x: 1100 }"
+        >
+          <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'quoteNo'">
+              {{ record.quoteNo || '-' }}
+            </template>
+            <template v-else-if="column.key === 'totalAmount'">
+              {{ formatMoney(record.totalAmount) }}
+            </template>
+            <template v-else-if="column.key === 'quoteDeadline'">
+              {{ record.quoteDeadline || '-' }}
+            </template>
+            <template v-else-if="column.key === 'deliverDate'">
+              {{ record.confirmDeliverDate || '-' }}
+            </template>
+            <template v-else-if="column.key === 'modifyTime'">
+              {{ record.modifyTime || '-' }}
+            </template>
+            <template v-else-if="column.key === 'status'">
+              <a-tag :color="getStatus(record).color">{{ getStatus(record).text }}</a-tag>
+            </template>
+            <template v-else-if="column.key === 'action'">
+              <a-space>
+                <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
+                <a-button type="link" size="small" @click="goEdit(record)">进入报价</a-button>
+              </a-space>
+            </template>
           </template>
-          <template v-else-if="column.key === 'status'">
-            <a-tag :color="getStatus(record).color">{{ getStatus(record).text }}</a-tag>
-          </template>
-          <template v-else-if="column.key === 'action'">
-            <a-space>
-              <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-              <a-button type="link" size="small" @click="goEdit(record)">进入报价</a-button>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
+        </a-table>
     </a-card>
 
     <!-- 报价单详情 -->
@@ -97,7 +107,7 @@
         </a-descriptions>
         <a-table
           :columns="detailColumns"
-          :data-source="detailQuote.items"
+          :data-source="detailQuote.items ?? []"
           :pagination="false"
           row-key="id"
           size="small"
@@ -116,47 +126,20 @@
       </template>
     </a-modal>
 
-    <!-- 待报价需求 -->
-    <a-modal v-model:open="pendingOpen" title="待报价需求" :footer="null" width="70%">
-      <a-table
-        :columns="pendingColumns"
-        :data-source="pendingList"
-        row-key="id"
-        size="middle"
-        :pagination="pagination"
-        :scroll="{ x: 900 }"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'itemCount'">{{ record.items.length }}</template>
-          <template v-else-if="column.key === 'quoteStatus'">
-            <a-tag :color="record.myQuote ? 'blue' : 'orange'">
-              {{ record.myQuote ? '已报价' : '未报价' }}
-            </a-tag>
-          </template>
-          <template v-else-if="column.key === 'action'">
-            <a-button type="link" size="small" @click="goPendingQuote(record)">去报价</a-button>
-          </template>
-        </template>
-      </a-table>
-    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
-import { awardStorage, quotationStorage, requirementStorage, userStorage } from '@/utils/storage'
-import type { PurchaseRequirement, Quotation } from '@/types'
+import { getQuotationDetail, getQuotationPage } from '@/api/quotation'
+import type { Quotation } from '@/types'
 
 const router = useRouter()
 
-const username = ref(userStorage.get()?.username ?? '')
-/** 供应商只能看到自己报过的历史报价单据 */
-const quotations = ref(
-  quotationStorage.list().filter((q) => q.quotePerson === username.value),
-)
+const quotations = ref<Quotation[]>([])
+const loading = ref(false)
 
 const query = reactive({
   reqNo: '',
@@ -172,48 +155,65 @@ interface StatusInfo {
 }
 
 function getStatus(q: Quotation): StatusInfo {
-  if (dayjs().isAfter(dayjs(q.quoteDeadline))) {
-    return { value: 'expired', text: '已截止', color: 'red' }
+  switch (q.status) {
+    case 'awarded':
+      return { value: 'awarded', text: '已中标', color: 'green' }
+    case 'expired':
+      return { value: 'expired', text: '已截止', color: 'red' }
+    default:
+      return { value: 'quoting', text: '报价中', color: 'blue' }
   }
-  return { value: 'quoting', text: '报价中', color: 'blue' }
 }
 
-/** 新需求（报价单）排在前 */
-const filteredList = computed(() => {
-  return quotations.value
-    .filter((q) => {
-      if (query.reqNo && !q.reqNo.includes(query.reqNo.trim())) return false
-      if (query.quoteNo && !q.quoteNo.includes(query.quoteNo.trim())) return false
-      if (query.status && getStatus(q).value !== query.status) return false
-      if (query.quoteRange?.length === 2) {
-        const t = dayjs(q.quoteTime)
-        if (
-          t.isBefore(dayjs(query.quoteRange[0]).startOf('day')) ||
-          t.isAfter(dayjs(query.quoteRange[1]).endOf('day'))
-        ) {
-          return false
-        }
-      }
-      return true
-    })
-    .sort((a, b) => b.quoteTime.localeCompare(a.quoteTime))
-})
-
-const pagination = {
+const pagination = reactive({
+  current: 1,
   pageSize: 10,
+  total: 0,
   showSizeChanger: true,
   showTotal: (total: number) => `共 ${total} 条`,
+  onChange: (page: number, pageSize: number) => {
+    pagination.current = page
+    pagination.pageSize = pageSize
+    fetchList()
+  },
+})
+
+function buildQuotationRows(list: Quotation[]): Quotation[] {
+  return list
 }
 
+async function fetchList(): Promise<void> {
+  loading.value = true
+  try {
+    const res = await getQuotationPage({
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
+      reqNo: query.reqNo || undefined,
+      quoteNo: query.quoteNo || undefined,
+      status: query.status,
+      quoteStart: query.quoteRange?.[0]?.format('YYYY-MM-DD'),
+      quoteEnd: query.quoteRange?.[1]?.format('YYYY-MM-DD'),
+    })
+    quotations.value = buildQuotationRows(res.list)
+    pagination.total = res.total
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchList)
+
 const columns = [
-  { title: '报价单号', dataIndex: 'quoteNo', width: 160 },
-  { title: '需求单号', dataIndex: 'reqNo', width: 160 },
-  { title: '报价金额', key: 'totalAmount', width: 140, align: 'right' as const },
-  { title: '确定交货日期', dataIndex: 'confirmDeliverDate', width: 130 },
-  { title: '报价时间', dataIndex: 'quoteTime', width: 180 },
-  { title: '修改时间', dataIndex: 'modifyTime', width: 180 },
+  { title: '需求单号', dataIndex: 'reqNo', width: 160 , align: 'center' },
+  { title: '报价单号', dataIndex: 'quoteNo', width: 160, align: 'center' },
+  { title: '报价金额', key: 'totalAmount', width: 140, align: 'center'  },
+   { title: '商品数量', dataIndex: 'itemCount', width: 160, align: 'center'  },
+  { title: '报价截止时间', key: 'quoteDeadline', width: 120, align: 'center' as const },
+  { title: '交货日期', dataIndex: 'confirmDeliverDate', width: 130, align: 'center'  },
+  // { title: '报价时间', dataIndex: 'quoteTime', width: 180 },
+  { title: '修改时间', dataIndex: 'modifyTime', width: 180 , align: 'center' },
   { title: '状态', key: 'status', width: 90, align: 'center' as const },
-  { title: '操作', key: 'action', width: 140, align: 'center' as const },
+  { title: '操作', key: 'action', width: 140, fixed: 'right', align: 'center' as const },
 ]
 
 const detailColumns = [
@@ -234,7 +234,8 @@ function formatMoney(value: number): string {
 }
 
 function handleSearch(): void {
-  // 响应式过滤即时生效
+  pagination.current = 1
+  fetchList()
 }
 
 function handleReset(): void {
@@ -242,65 +243,20 @@ function handleReset(): void {
   query.quoteNo = ''
   query.status = undefined
   query.quoteRange = undefined
+  pagination.current = 1
+  fetchList()
 }
 
 function goEdit(q: Quotation): void {
-  const req = requirementStorage.getById(q.requirementId)
-  if (!req) {
-    router.push('/purchase')
-    return
-  }
   router.push(`/quotation/edit?requirementId=${q.requirementId}`)
-}
-
-/* ---------- 待报价需求（供应商在报价页面内发起报价） ---------- */
-const pendingOpen = ref(false)
-
-interface PendingRequirement extends PurchaseRequirement {
-  myQuote: boolean
-}
-
-const pendingList = computed<PendingRequirement[]>(() => {
-  const now = dayjs()
-  return requirementStorage
-    .list()
-    .filter((r) => {
-      // 仅展示未截止且未中标的需求
-      if (now.isAfter(dayjs(r.quoteDeadline))) return false
-      if (awardStorage.getByRequirement(r.id)) return false
-      return true
-    })
-    .map((r) => ({
-      ...r,
-      myQuote: quotations.value.some((q) => q.requirementId === r.id),
-    }))
-    .sort((a, b) => b.createTime.localeCompare(a.createTime))
-})
-
-const pendingColumns = [
-  { title: '需求单号', dataIndex: 'reqNo', width: 170 },
-  { title: '报价截止日期', dataIndex: 'quoteDeadline', width: 180 },
-  { title: '集中交货日期', dataIndex: 'deliverDate', width: 130 },
-  { title: '商品数量', key: 'itemCount', width: 90, align: 'center' as const },
-  { title: '报价状态', key: 'quoteStatus', width: 100, align: 'center' as const },
-  { title: '操作', key: 'action', width: 90, align: 'center' as const },
-]
-
-function openPending(): void {
-  pendingOpen.value = true
-}
-
-function goPendingQuote(r: PurchaseRequirement): void {
-  pendingOpen.value = false
-  router.push(`/quotation/edit?requirementId=${r.id}`)
 }
 
 /* ---------- 详情 ---------- */
 const detailOpen = ref(false)
 const detailQuote = ref<Quotation | null>(null)
 
-function openDetail(q: Quotation): void {
-  detailQuote.value = q
+async function openDetail(q: Quotation): Promise<void> {
+  detailQuote.value = await getQuotationDetail(q.id)
   detailOpen.value = true
 }
 </script>

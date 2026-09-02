@@ -15,7 +15,13 @@ export default defineConfig({
   server: {
     host: true,
     port: 5100,
-    strictPort: true,
+    strictPort: false,
     open: false,
+    proxy: {
+      '/api': {
+        target: 'http://192.168.110.7:8080',
+        changeOrigin: true,
+      },
+    },
   },
 })

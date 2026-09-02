@@ -182,41 +182,35 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
-import { genReqNo, publishRequirement, requirementStorage, userStorage } from '@/utils/storage'
-import type { PurchaseRequirement, RequirementItem } from '@/types'
+import { getNextReqNo, getRequirementDetail, saveRequirement } from '@/api/requirement'
+import type {  RequirementItem } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 
 const units = ['个', '件', '套', '台', '只', '箱', '批', '米', '公斤']
 
-const editId = (route.query.id as string) || undefined
-const currentRequirement = editId ? requirementStorage.getById(editId) : null
-const isEdit = !!currentRequirement
-const username = ref(userStorage.get()?.username ?? '')
+const editId = Number(route.query.id) || 0
+const isEdit = !!editId
+const loading = ref(false)
 
-/** 需求单号：编辑保留原单号，新建时自动生成 */
-const reqNo = ref(currentRequirement?.reqNo ?? genReqNo())
-const creator = ref(currentRequirement?.creator ?? username.value)
-const createTime = ref(currentRequirement?.createTime ?? new Date().toLocaleString())
-const modifier = ref(currentRequirement?.modifier ?? '')
-const modifyTime = ref(currentRequirement?.modifyTime ?? '')
+const reqNo = ref('')
+const creator = ref('')
+const createTime = ref('')
+const modifier = ref('')
+const modifyTime = ref('')
 
 const formRef = ref()
 const submitting = ref(false)
 const form = reactive({
-  quoteDeadline: (currentRequirement
-    ? dayjs(currentRequirement.quoteDeadline)
-    : undefined) as Dayjs | undefined,
-  deliverDate: (currentRequirement
-    ? dayjs(currentRequirement.deliverDate)
-    : undefined) as Dayjs | undefined,
-  remark: currentRequirement?.remark ?? '',
+  quoteDeadline: undefined as Dayjs | undefined,
+  deliverDate: undefined as Dayjs | undefined,
+  remark: '',
 })
 
 const rules = {
@@ -224,9 +218,30 @@ const rules = {
   deliverDate: [{ required: true, message: '请选择集中交货日期', trigger: 'change' }],
 }
 
-const items = ref<RequirementItem[]>(
-  currentRequirement?.items.map((i) => ({ ...i })) ?? [],
-)
+const items = ref<RequirementItem[]>([])
+
+/** 初始化：编辑态拉详情，新建态预生成单号 */
+onMounted(async () => {
+  loading.value = true
+  try {
+    if (isEdit) {
+      const detail = await getRequirementDetail(editId)
+      reqNo.value = detail.reqNo
+      creator.value = detail.creator
+      createTime.value = detail.createTime
+      modifier.value = detail.modifier || ''
+      modifyTime.value = detail.modifyTime || ''
+      form.quoteDeadline = dayjs(detail.quoteDeadline)
+      form.deliverDate = dayjs(detail.deliverDate)
+      form.remark = detail.remark || ''
+      items.value = detail.items.map((i) => ({ ...i }))
+    } else {
+      reqNo.value = await getNextReqNo()
+    }
+  } finally {
+    loading.value = false
+  }
+})
 
 const pagination = {
   pageSize: 5,
@@ -235,28 +250,29 @@ const pagination = {
 }
 
 const itemColumns = [
-  { title: '序号', key: 'index', width: 70, align: 'center' as const },
-  { title: '配件图号', dataIndex: 'partNo', width: 130 },
-  { title: '通用/替换号', dataIndex: 'replaceNo', width: 130 },
-  { title: '配件名称', dataIndex: 'partName', width: 150 },
-  { title: '采购数量', key: 'quantity', width: 100, align: 'right' as const },
-  { title: '单位', dataIndex: 'unit', width: 70, align: 'center' as const },
-  { title: '规格型号', dataIndex: 'spec', width: 130 },
-  { title: '采购备注', dataIndex: 'purchaseRemark' },
-  { title: '状态', key: 'published', width: 90, align: 'center' as const },
-  { title: '操作', key: 'action', width: 240, fixed: 'right' as const },
+  { title: '序号', key: 'index', width: 70, align: 'center'},
+  { title: '配件图号', dataIndex: 'partNo', width: 130, align: 'center' },
+  { title: '通用/替换号', dataIndex: 'replaceNo', width: 130, align: 'center' },
+  { title: '配件名称', dataIndex: 'partName', width: 150, align: 'center' },
+  { title: '采购数量', key: 'quantity', width: 100, align: 'center'  },
+  { title: '单位', dataIndex: 'unit', width: 70, align: 'center' },
+  { title: '规格型号', dataIndex: 'spec', width: 130, align: 'center' },
+  { title: '采购备注', dataIndex: 'purchaseRemark', width: 200, align: 'center' },
+  { title: '状态', key: 'published', width: 90, align: 'center'  },
+  { title: '操作', key: 'action', width: 150, fixed: 'right', align: 'center' },
 ]
 
 const totalQuantity = computed(() =>
   items.value.reduce((sum, i) => sum + (i.quantity || 0), 0),
 )
 
+
 /* ---------- 商品新增 / 编辑 ---------- */
 const itemModalOpen = ref(false)
 const editingItem = ref<RequirementItem | null>(null)
 const itemFormRef = ref()
 const itemForm = reactive({
-  id: '',
+  id: 0 as number,
   partNo: '',
   replaceNo: '',
   partName: '',
@@ -273,7 +289,7 @@ const itemRules = {
 
 function openItemModal(item?: RequirementItem): void {
   editingItem.value = item ?? null
-  itemForm.id = item?.id ?? `ITEM-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  itemForm.id = item?.id ?? 0
   itemForm.partNo = item?.partNo ?? ''
   itemForm.replaceNo = item?.replaceNo ?? ''
   itemForm.partName = item?.partName ?? ''
@@ -308,7 +324,7 @@ async function saveItem(): Promise<void> {
     unit: itemForm.unit,
     spec: itemForm.spec.trim(),
     purchaseRemark: itemForm.purchaseRemark.trim(),
-    published: editingItem.value?.published ?? false,
+   published: editingItem.value?.published ?? false,
   }
   const idx = items.value.findIndex((i) => i.id === data.id)
   if (idx >= 0) {
@@ -357,30 +373,32 @@ async function handlePublish(): Promise<void> {
       content: `还有 ${unpublished.length} 条商品未发布，发布后不可再编辑或删除。确定全部发布并提交需求单吗？`,
       okText: '发布',
       cancelText: '取消',
-      onOk: doPublish,
+      onOk: () => doPublish(),
     })
   } else {
-    doPublish()
+    await doPublish()
   }
 }
 
-function submitRequirement(): void {
-  const now = new Date().toLocaleString()
-  const requirement: PurchaseRequirement = {
-    id: currentRequirement?.id ?? `REQ-${Date.now()}`,
-    reqNo: reqNo.value,
-    quoteDeadline: (form.quoteDeadline as Dayjs).format('YYYY-MM-DD HH:mm:ss'),
-    deliverDate: (form.deliverDate as Dayjs).format('YYYY-MM-DD'),
-    creator: creator.value,
-    createTime: createTime.value,
-    modifier: username.value,
-    modifyTime: now,
-    remark: form.remark.trim(),
-    items: items.value.map((i) => ({ ...i })),
+async function submitRequirement(): Promise<void> {
+  submitting.value = true
+  try {
+    await saveRequirement({
+      id: isEdit ? editId : undefined,
+      reqNo: reqNo.value,
+      quoteDeadline: (form.quoteDeadline as Dayjs).format('YYYY-MM-DD HH:mm:ss'),
+      deliverDate: (form.deliverDate as Dayjs).format('YYYY-MM-DD'),
+      remark: form.remark.trim(),
+      items: items.value.map((i) => ({
+        ...i,
+        id: i.id || undefined,
+      })),
+    })
+    message.success('采购需求发布成功')
+    router.push('/purchase')
+  } finally {
+    submitting.value = false
   }
-  publishRequirement(requirement)
-  message.success('采购需求发布成功')
-  router.push('/purchase')
 }
 </script>
 

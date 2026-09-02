@@ -54,7 +54,8 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UserOutlined, LockOutlined } from '@ant-design/icons-vue'
-import { userStorage } from '@/utils/storage'
+import { authStorage, userStorage } from '@/utils/storage'
+import { login } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,14 +72,18 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 }
 
-function handleLogin(): void {
+async function handleLogin(): Promise<void> {
   loading.value = true
-  setTimeout(() => {
-    userStorage.save({ username: form.username })
-    message.success(`欢迎登录，${form.username}`)
+  try {
+    const result = await login({ username: form.username, password: form.password })
+    authStorage.setToken(result.token)
+    userStorage.save({ username: result.name || result.username })
+    message.success(`欢迎登录，${result.name || result.username}`)
     const redirect = (route.query.redirect as string) || '/purchase'
     router.push(redirect)
-  }, 400)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

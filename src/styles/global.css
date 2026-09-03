@@ -44,3 +44,49 @@ body {
 .rank-first > td {
   background-color: #fffbe6 !important;
 }
+
+/* 退出登录确认弹窗定制 */
+.logout-confirm-modal .ant-modal {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.logout-confirm-modal .ant-modal-content {
+  padding: 28px 32px 24px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+}
+
+.logout-confirm-modal .ant-modal-confirm-body {
+  align-items: flex-start;
+}
+
+.logout-confirm-modal .ant-modal-confirm-body > .anticon {
+  font-size: 32px;
+  margin-right: 14px;
+  margin-top: 4px;
+}
+
+.logout-confirm-modal .ant-modal-confirm-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  padding-top: 4px;
+}
+
+.logout-confirm-modal .ant-modal-confirm-content {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.6;
+  margin-top: 6px;
+}
+
+.logout-confirm-modal .ant-modal-footer {
+  padding: 20px 0 0;
+  margin-top: 24px;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.logout-confirm-modal .ant-btn {
+  min-width: 88px;
+}

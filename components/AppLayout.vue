@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import { UserOutlined } from '@ant-design/icons-vue'
 import { authStorage, userStorage } from '@/utils/storage'
 import { logout } from '@/api/auth'
@@ -77,14 +77,23 @@ function onMenuClick({ key }: { key: string }): void {
 
 async function onUserMenuClick({ key }: { key: string }): Promise<void> {
   if (key === 'logout') {
-    try {
-      await logout()
-    } catch {
-      // 退出接口失败不影响前端清除
-    }
-    authStorage.clear()
-    message.success('已退出登录')
-    router.push('/login')
+    Modal.confirm({
+      centered: true,
+      title: '确认退出登录？',
+      content: '退出后需要重新登录才能继续使用系统。',
+      okText: '确认退出',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await logout()
+        } catch {
+          // 退出接口失败不影响前端清除
+        }
+        authStorage.clear()
+        message.success('已退出登录')
+        router.push('/login')
+      },
+    })
   }
 }
 </script>

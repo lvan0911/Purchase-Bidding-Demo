@@ -125,6 +125,7 @@
         title="商品报价"
         ok-text="保存报价"
         cancel-text="取消"
+        wrap-class-name="detail-modal-wrap"
         @ok="saveQuote"
       >
         <template v-if="quoteTarget">
@@ -162,7 +163,7 @@
       </a-modal>
 
       <!-- 商品详情 -->
-      <a-modal v-model:open="detailOpen" title="商品详情" :footer="null">
+      <a-modal v-model:open="detailOpen" title="商品详情" :footer="null" wrap-class-name="detail-modal-wrap">
         <template v-if="detailItem">
           <a-descriptions :column="1" bordered size="small">
             <a-descriptions-item label="配件图号">{{ detailItem.partNo }}</a-descriptions-item>
@@ -400,22 +401,131 @@ async function handleSubmit(): Promise<void> {
 
 .base-card {
   margin-bottom: 16px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 34, 78, 0.06);
+  overflow: hidden;
+}
+
+.base-card :deep(.ant-card-head) {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eef2f9;
+}
+
+.base-card :deep(.ant-card-head-title) {
+  font-weight: 600;
+  font-size: 15px;
+  position: relative;
+  padding-left: 14px;
+}
+
+.base-card :deep(.ant-card-head-title::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1677ff, #36cfc9);
+}
+
+.base-card :deep(.ant-card-body) {
+  padding: 20px;
+}
+
+.base-card :deep(.ant-descriptions-view) {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.base-card :deep(.ant-descriptions-item-label) {
+  background: #f5f9ff !important;
+  color: #33456b !important;
+  font-weight: 500;
+}
+
+.base-card :deep(.ant-input),
+.base-card :deep(.ant-picker),
+.base-card :deep(textarea.ant-input) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
 }
 
 .items-card {
   margin-bottom: 16px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 34, 78, 0.06);
+  overflow: hidden;
 }
 
-.table-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  color: rgba(0, 0, 0, 0.65);
+.items-card :deep(.ant-card-head) {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eef2f9;
+}
+
+.items-card :deep(.ant-card-head-title) {
+  font-weight: 600;
+  font-size: 15px;
+  position: relative;
+  padding-left: 14px;
+}
+
+.items-card :deep(.ant-card-head-title::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1677ff, #36cfc9);
+}
+
+.items-card :deep(.ant-card-body) {
+  padding: 8px 20px 16px;
+}
+
+.items-card :deep(.ant-table-thead > tr > th) {
+  background: linear-gradient(180deg, #f5f9ff, #edf3fe);
+  color: #1d2b4f;
+  font-weight: 600;
+  border-bottom: 1px solid #e3ebf8;
+}
+
+.items-card :deep(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid #f2f5fa;
+  transition: background-color 0.2s ease;
+}
+
+.items-card :deep(.ant-table-tbody > tr:hover > td) {
+  background: #f4f8ff !important;
+}
+
+.items-card :deep(.ant-btn-link) {
+  padding: 2px 10px;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.items-card :deep(.ant-btn-link:not(:disabled):hover) {
+  background: rgba(22, 119, 255, 0.08);
+}
+
+.items-card :deep(.ant-btn-link:disabled) {
+  background: transparent;
+}
+
+.table-footer b {
+  color: #1677ff;
 }
 
 .total-amount {
-  color: #cf1322;
-  font-weight: 600;
+  color: #cf1322 !important;
+  font-size: 15px;
 }
 
 .submit-bar {
@@ -424,11 +534,79 @@ async function handleSubmit(): Promise<void> {
   padding: 8px 0 16px;
 }
 
+.submit-bar :deep(.ant-btn-primary) {
+  border: none;
+  border-radius: 10px;
+  padding-left: 44px;
+  padding-right: 44px;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  box-shadow: 0 4px 14px rgba(22, 119, 255, 0.35);
+  transition: all 0.25s ease;
+}
+
+.submit-bar :deep(.ant-btn-primary:hover):not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(22, 119, 255, 0.45);
+}
+
 .quote-target-desc {
   margin-bottom: 16px;
 }
 
 .quote-target-form {
   margin-top: 16px;
+}
+</style>
+
+<style>
+.detail-modal-wrap .ant-modal {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(15, 34, 78, 0.18);
+}
+
+.detail-modal-wrap .ant-modal-header {
+  padding: 18px 24px 14px;
+  margin-bottom: 0;
+  border-bottom: 1px solid #eef2f9;
+}
+
+.detail-modal-wrap .ant-modal-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.detail-modal-wrap .ant-modal-body {
+  padding: 20px 24px 24px;
+  background: linear-gradient(180deg, #f7faff 0%, #ffffff 160px);
+}
+
+.detail-modal-wrap .ant-descriptions-view {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.detail-modal-wrap .ant-descriptions-item-label {
+  background: #f5f9ff !important;
+  color: #33456b !important;
+  font-weight: 500;
+}
+
+.detail-modal-wrap .ant-form-item-label > label {
+  color: #33456b;
+  font-weight: 500;
+}
+
+.detail-modal-wrap .ant-input,
+.detail-modal-wrap .ant-input-number,
+.detail-modal-wrap textarea.ant-input {
+  border-radius: 8px !important;
+}
+
+.detail-modal-wrap .ant-btn-primary {
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.35);
 }
 </style>

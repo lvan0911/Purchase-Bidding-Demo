@@ -136,6 +136,7 @@
       :title="editingItem ? '编辑商品' : '新增商品'"
       ok-text="保存"
       cancel-text="取消"
+      wrap-class-name="detail-modal-wrap"
       @ok="saveItem"
       @cancel="closeItemModal"
     >
@@ -407,22 +408,202 @@ async function submitRequirement(): Promise<void> {
 <style scoped>
 .base-card {
   margin-bottom: 16px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 34, 78, 0.06);
+  overflow: hidden;
+}
+
+.base-card :deep(.ant-card-head) {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eef2f9;
+}
+
+.base-card :deep(.ant-card-head-title) {
+  font-weight: 600;
+  font-size: 15px;
+  position: relative;
+  padding-left: 14px;
+}
+
+.base-card :deep(.ant-card-head-title::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1677ff, #36cfc9);
+}
+
+.base-card :deep(.ant-card-body) {
+  padding: 24px 20px 8px;
+}
+
+.base-card :deep(.ant-input),
+.base-card :deep(.ant-select-selector),
+.base-card :deep(.ant-picker),
+.base-card :deep(textarea.ant-input) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
 }
 
 .items-card {
   margin-bottom: 16px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 34, 78, 0.06);
+  overflow: hidden;
 }
 
-.table-footer {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  color: rgba(0, 0, 0, 0.65);
+.items-card :deep(.ant-card-head) {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eef2f9;
+}
+
+.items-card :deep(.ant-card-head-title) {
+  font-weight: 600;
+  font-size: 15px;
+  position: relative;
+  padding-left: 14px;
+}
+
+.items-card :deep(.ant-card-head-title::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1677ff, #36cfc9);
+}
+
+.items-card :deep(.ant-card-body) {
+  padding: 8px 20px 16px;
+}
+
+.items-card :deep(.ant-table-thead > tr > th) {
+  background: linear-gradient(180deg, #f5f9ff, #edf3fe);
+  color: #1d2b4f;
+  font-weight: 600;
+  border-bottom: 1px solid #e3ebf8;
+}
+
+.items-card :deep(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid #f2f5fa;
+  transition: background-color 0.2s ease;
+}
+
+.items-card :deep(.ant-table-tbody > tr:hover > td) {
+  background: #f4f8ff !important;
+}
+
+.items-card :deep(.ant-tag) {
+  border: none;
+  border-radius: 999px;
+  padding: 1px 12px 1px 10px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.items-card :deep(.ant-tag::before) {
+  content: '';
+  display: inline-block;
+
+  border-radius: 50%;
+  background: currentColor;
+
+  vertical-align: middle;
+  margin-top: -2px;
+}
+
+.items-card :deep(.ant-btn-link) {
+  padding: 2px 10px;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.items-card :deep(.ant-btn-link:not(:disabled):hover) {
+  background: rgba(22, 119, 255, 0.08);
+}
+
+.items-card :deep(.ant-btn-dangerous.ant-btn-link:not(:disabled):hover) {
+  background: rgba(255, 77, 79, 0.08);
+}
+
+.items-card :deep(.ant-btn-link:disabled) {
+  background: transparent;
+}
+
+.table-footer b {
+  color: #1677ff;
 }
 
 .publish-bar {
   display: flex;
   justify-content: center;
   padding: 8px 0 16px;
+}
+
+.publish-bar :deep(.ant-btn-primary) {
+  border: none;
+  border-radius: 10px;
+  padding-left: 44px;
+  padding-right: 44px;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  box-shadow: 0 4px 14px rgba(22, 119, 255, 0.35);
+  transition: all 0.25s ease;
+}
+
+.publish-bar :deep(.ant-btn-primary:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(22, 119, 255, 0.45);
+}
+</style>
+
+<style>
+.detail-modal-wrap .ant-modal {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(15, 34, 78, 0.18);
+}
+
+.detail-modal-wrap .ant-modal-header {
+  padding: 18px 24px 14px;
+  margin-bottom: 0;
+  border-bottom: 1px solid #eef2f9;
+}
+
+.detail-modal-wrap .ant-modal-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.detail-modal-wrap .ant-modal-body {
+  padding: 24px;
+  background: linear-gradient(180deg, #f7faff 0%, #ffffff 160px);
+}
+
+.detail-modal-wrap .ant-form-item-label > label {
+  color: #33456b;
+  font-weight: 500;
+}
+
+.detail-modal-wrap .ant-input,
+.detail-modal-wrap .ant-select-selector,
+.detail-modal-wrap .ant-input-number,
+.detail-modal-wrap textarea.ant-input {
+  border-radius: 8px !important;
+}
+
+.detail-modal-wrap .ant-btn-primary {
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.35);
 }
 </style>

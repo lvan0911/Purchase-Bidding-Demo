@@ -108,6 +108,7 @@
       ok-text="保存"
       cancel-text="取消"
       width="780px"
+      wrap-class-name="detail-modal-wrap"
       @ok="handleSave"
       @cancel="closeModal"
     >
@@ -363,13 +364,222 @@ async function removeUser(account: UserAccount): Promise<void> {
 <style scoped>
 .search-card {
   margin-bottom: 16px;
+  position: relative;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  box-shadow: 0 2px 10px rgba(15, 34, 78, 0.06);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.search-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1677ff, #36cfc9, #69b1ff, #1677ff);
+  background-size: 200% 100%;
+  animation: searchLine 6s linear infinite;
+}
+
+.search-card:hover {
+  box-shadow: 0 6px 18px rgba(22, 119, 255, 0.14);
+}
+
+@keyframes searchLine {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .search-card :deep(.ant-form-item) {
   margin-bottom: 8px;
+  margin-right: 22px;
+}
+
+.search-card :deep(.ant-form-item-label > label) {
+  color: #33456b;
+  font-weight: 500;
+}
+
+.search-card :deep(.ant-input),
+.search-card :deep(.ant-select-selector),
+.search-card :deep(.ant-picker) {
+  border-radius: 8px !important;
+  transition: all 0.25s ease;
+}
+
+.search-card :deep(.ant-input:hover),
+.search-card :deep(.ant-select-selector:hover),
+.search-card :deep(.ant-picker:hover) {
+  border-color: #4096ff !important;
+}
+
+.search-card :deep(.ant-input:focus),
+.search-card :deep(.ant-select-focused .ant-select-selector),
+.search-card :deep(.ant-picker-focused) {
+  border-color: #1677ff !important;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1) !important;
+}
+
+.search-card :deep(.ant-btn-primary) {
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.35);
+  transition: all 0.25s ease;
+}
+
+.search-card :deep(.ant-btn-primary:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(22, 119, 255, 0.45);
+}
+
+.search-card :deep(.ant-btn-default) {
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.search-card :deep(.ant-btn-default:hover) {
+  color: #1677ff;
+  border-color: #1677ff;
+}
+
+.list-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 34, 78, 0.06);
+  overflow: hidden;
+}
+
+.list-card :deep(.ant-card-head) {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eef2f9;
 }
 
 .list-card :deep(.ant-card-head-title) {
   font-weight: 600;
+  font-size: 15px;
+  position: relative;
+  padding-left: 14px;
+}
+
+.list-card :deep(.ant-card-head-title::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1677ff, #36cfc9);
+}
+
+.list-card :deep(.ant-card-body) {
+  padding: 8px 20px 16px;
+}
+
+.list-card :deep(.ant-table-thead > tr > th) {
+  background: linear-gradient(180deg, #f5f9ff, #edf3fe);
+  color: #1d2b4f;
+  font-weight: 600;
+  border-bottom: 1px solid #e3ebf8;
+}
+
+.list-card :deep(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid #f2f5fa;
+  transition: background-color 0.2s ease;
+}
+
+.list-card :deep(.ant-table-tbody > tr:hover > td) {
+  background: #f4f8ff !important;
+}
+
+.list-card :deep(.ant-tag) {
+  border: none;
+  border-radius: 999px;
+  padding: 1px 12px 1px 10px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.list-card :deep(.ant-tag::before) {
+  content: '';
+  display: inline-block;
+
+  border-radius: 50%;
+  background: currentColor;
+
+  vertical-align: middle;
+  margin-top: -2px;
+}
+
+.list-card :deep(.ant-btn-link) {
+  padding: 2px 10px;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.list-card :deep(.ant-btn-link:not(:disabled):hover) {
+  background: rgba(22, 119, 255, 0.08);
+}
+
+.list-card :deep(.ant-btn-dangerous.ant-btn-link:not(:disabled):hover) {
+  background: rgba(255, 77, 79, 0.08);
+}
+
+.list-card :deep(.ant-btn-link:disabled) {
+  background: transparent;
+}
+</style>
+
+<style>
+.detail-modal-wrap .ant-modal {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(15, 34, 78, 0.18);
+}
+
+.detail-modal-wrap .ant-modal-header {
+  padding: 18px 24px 14px;
+  margin-bottom: 0;
+  border-bottom: 1px solid #eef2f9;
+}
+
+.detail-modal-wrap .ant-modal-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.detail-modal-wrap .ant-modal-body {
+  padding: 24px 24px 20px;
+  background: linear-gradient(180deg, #f7faff 0%, #ffffff 160px);
+}
+
+.detail-modal-wrap .ant-form-item-label > label {
+  color: #33456b;
+  font-weight: 500;
+}
+
+.detail-modal-wrap .ant-input,
+.detail-modal-wrap .ant-select-selector,
+.detail-modal-wrap .ant-input-password,
+.detail-modal-wrap textarea.ant-input {
+  border-radius: 8px !important;
+  transition: all 0.25s ease;
+}
+
+.detail-modal-wrap .ant-btn-primary {
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
+  box-shadow: 0 2px 8px rgba(22, 119, 255, 0.35);
 }
 </style>

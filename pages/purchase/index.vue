@@ -74,7 +74,7 @@
           <template v-else-if="column.key === 'action'">
             <a-space v-if="userStorage.get()?.role === 'purchaser' || userStorage.get()?.role === 'admin'">
               <a-button type="link"  size="small"  @click="openDetail(record)">详情</a-button>
-              <a-button type="link" size="small" :disabled="record.status == 'awarded'" @click="goEdit(record)">编辑</a-button>
+              <a-button type="link" size="small" :disabled="record.status == 'awarded' || userStorage.get()?.role === 'admin'" @click="goEdit(record)">编辑</a-button>
             </a-space>
             <a-button type="link" size="small" :disabled="userStorage.get()?.role === 'admin' || record.status != 'quoting'"  v-if="userStorage.get()?.role === 'supplier' || userStorage.get()?.role === 'admin'" @click="goQuotation(record)">去报价</a-button>
           </template>

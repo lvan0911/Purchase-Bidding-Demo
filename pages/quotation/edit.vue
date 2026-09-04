@@ -40,13 +40,13 @@
             <a-input
               v-model:value="form.quotePerson"
               placeholder="请输入报价人（必填）"
-              :disabled="isExpired"
+              :disabled="isExpired || isSupplier"
             />
           </a-descriptions-item>
-          <a-descriptions-item label="报价时间">{{ quoteTime || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="修改人">{{ modifier || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="修改时间">{{ modifyTime || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="备注" :span="3">{{ requirement.remark || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="报价时间" :span="2">{{ quoteTime || '-' }}</a-descriptions-item>
+           <a-descriptions-item label="修改时间">{{ modifyTime || '-' }}</a-descriptions-item>
+         <!-- <a-descriptions-item label="修改人">{{ modifier || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="备注" :span="2">{{ requirement.remark || '-' }}</a-descriptions-item> -->
           <a-descriptions-item label="报价备注" :span="3">
             <a-textarea
               v-model:value="form.quoteRemark"
@@ -189,6 +189,7 @@ import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { getEditData, submitQuotation } from '@/api/quotation'
+import { userStorage } from '@/utils/storage'
 import type { QuoteItem } from '@/types'
 
 const route = useRoute()
@@ -197,11 +198,15 @@ const router = useRouter()
 const requirementId = Number(route.query.requirementId) || 0
 const loading = ref(false)
 
+const currentUser = userStorage.get()
+const isSupplier = computed(() => currentUser?.role === 'supplier')
+
 const requirement = ref<{
   reqNo: string
   quoteDeadline: string
   deliverDate: string
   remark: string
+  expired?: boolean
 } | null>(null)
 
 const quoteNo = ref('')
@@ -223,37 +228,49 @@ onMounted(async () => {
   loading.value = true
   try {
     const data = await getEditData(requirementId)
-    console.log('[getEditData response]', data)
     requirement.value = {
       reqNo: data.reqNo,
       quoteDeadline: data.quoteDeadline,
       deliverDate: data.deliverDate,
       remark: data.remark,
+      expired: data.expired,
     }
-    // 后端返回的 items 包含已有报价（price=0 表示未报价）
+    quoteNo.value = data.quoteNo
+    quoteTime.value = data.quoteTime || ''
+    modifier.value = data.modifier || ''
+    modifyTime.value = data.modifyTime || ''
+    form.quotePerson = data.quotePerson
+      || (isSupplier.value ? currentUser?.name || currentUser?.username || '' : '')
+    form.confirmDeliverDate = data.confirmDeliverDate
+      ? dayjs(data.confirmDeliverDate)
+      : undefined
+    form.quoteRemark = data.quoteRemark || ''
+    // 已有报价回填（unitPrice 为空/0 表示未报价）
     items.value = data.items.map((it) => ({
       id: it.requirementItemId,
       requirementItemId: it.requirementItemId,
       partNo: it.partNo,
-      replaceNo: '',
+      replaceNo: it.replaceNo,
       partName: it.partName,
       quantity: it.quantity,
       unit: it.unit,
       spec: it.spec,
       purchaseRemark: it.purchaseRemark,
-      unitPrice: it.price > 0 ? it.price : null,
+      unitPrice: it.unitPrice ? it.unitPrice : null,
       moq: it.moq,
-      quoted: it.quoted,
-      quoteRemark: '',
+      quoted: !!it.unitPrice,
+      quoteRemark: it.quoteRemark || '',
     }))
   } finally {
     loading.value = false
   }
 })
 
-const isExpired = computed(
-  () => !!requirement.value && dayjs().isAfter(dayjs(requirement.value.quoteDeadline)),
-)
+const isExpired = computed(() => {
+  if (!requirement.value) return false
+  return requirement.value.expired
+    ?? dayjs().isAfter(dayjs(requirement.value.quoteDeadline))
+})
 
 const pagination = {
   pageSize: 5,
@@ -263,15 +280,15 @@ const pagination = {
 
 const itemColumns = [
   { title: '序号', key: 'index', width: 60, align: 'center' as const },
-  { title: '配件图号', dataIndex: 'partNo', width: 120 },
-  { title: '通用/替换号', dataIndex: 'replaceNo', width: 120 },
-  { title: '配件名称', dataIndex: 'partName', width: 140 },
-  { title: '采购数量', dataIndex: 'quantity', width: 90, align: 'right' as const },
-  { title: '单价(￥)', key: 'unitPrice', width: 130 },
-  { title: '单位', dataIndex: 'unit', width: 65, align: 'center' as const },
-  { title: '规格型号', dataIndex: 'spec', width: 110 },
-  { title: '采购备注', dataIndex: 'purchaseRemark', width: 110 },
-  { title: '报价备注', key: 'quoteRemark', width: 130 },
+  { title: '配件图号', dataIndex: 'partNo',  align: 'center' as const },
+  { title: '通用/替换号', dataIndex: 'replaceNo',  align: 'center' as const },
+  { title: '配件名称', dataIndex: 'partName',  align: 'center' as const },
+  { title: '采购数量', dataIndex: 'quantity', align: 'center' as const },
+  { title: '单价(￥)', key: 'unitPrice',  align: 'center' as const },
+  { title: '单位', dataIndex: 'unit', align: 'center' as const },
+  { title: '规格型号', dataIndex: 'spec', align: 'center' as const },
+  { title: '采购备注', dataIndex: 'purchaseRemark', align: 'center' as const },
+  { title: '报价备注', key: 'quoteRemark', align: 'center' as const },
   { title: '操作', key: 'action', width: 130, fixed: 'right' as const },
 ]
 

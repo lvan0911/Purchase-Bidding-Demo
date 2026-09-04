@@ -79,7 +79,7 @@
             <template v-else-if="column.key === 'action'">
               <a-space>
                 <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-                <a-button type="link" size="small" :disabled="record.status !== 'quoting'" @click="goEdit(record)">修改报价</a-button>
+                <a-button type="link" size="small" :disabled="record.status !== 'quoting'||userStorage.get()?.role === 'admin'" @click="goEdit(record)">修改报价</a-button>
               </a-space>
             </template>
           </template>
@@ -135,6 +135,7 @@ import { useRouter } from 'vue-router'
 import type { Dayjs } from 'dayjs'
 import { getQuotationDetail, getQuotationPage } from '@/api/quotation'
 import type { Quotation } from '@/types'
+import { userStorage } from '@/utils/storage'
 
 const router = useRouter()
 
@@ -218,15 +219,15 @@ const columns = [
 
 const detailColumns = [
   { title: '序号', key: 'index', width: 55, align: 'center' as const },
-  { title: '配件图号', dataIndex: 'partNo', width: 110 },
-  { title: '通用/替换号', dataIndex: 'replaceNo', width: 110 },
-  { title: '配件名称', dataIndex: 'partName', width: 130 },
-  { title: '采购数量', dataIndex: 'quantity', width: 80, align: 'right' as const },
-  { title: '单价(￥)', key: 'unitPrice', width: 100, align: 'right' as const },
-  { title: '单位', dataIndex: 'unit', width: 60, align: 'center' as const },
-  { title: '规格型号', dataIndex: 'spec', width: 100 },
-  { title: '报价备注', dataIndex: 'quoteRemark', width: 160 },
-  { title: '小计', key: 'subtotal', width: 120, align: 'right' as const },
+  { title: '配件图号', dataIndex: 'partNo',  align: 'center' as const },
+  { title: '通用/替换号', dataIndex: 'replaceNo',  align: 'center' as const },
+  { title: '配件名称', dataIndex: 'partName',  align: 'center' as const },
+  { title: '采购数量', dataIndex: 'quantity',  align: 'center' as const },
+  { title: '单价(￥)', key: 'unitPrice',  align: 'center' as const },
+  { title: '单位', dataIndex: 'unit',  align: 'center' as const },
+  { title: '规格型号', dataIndex: 'spec',  align: 'center' as const },
+  { title: '报价备注', dataIndex: 'quoteRemark',  align: 'center' as const },
+  { title: '小计', key: 'subtotal',  align: 'center' as const },
 ]
 
 function formatMoney(value: number): string {

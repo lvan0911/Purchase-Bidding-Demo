@@ -219,6 +219,9 @@ const rules = {
 
 const items = ref<RequirementItem[]>([])
 
+/** 新增商品的唯一临时 ID 计数器（负数，与后端正数 ID 区分） */
+let tempItemId = -1
+
 /** 初始化：编辑态拉详情，新建态预生成单号 */
 onMounted(async () => {
   loading.value = true
@@ -288,7 +291,7 @@ const itemRules = {
 
 function openItemModal(item?: RequirementItem): void {
   editingItem.value = item ?? null
-  itemForm.id = item?.id ?? 0
+  itemForm.id = item?.id ?? tempItemId--
   itemForm.partNo = item?.partNo ?? ''
   itemForm.replaceNo = item?.replaceNo ?? ''
   itemForm.partName = item?.partName ?? ''

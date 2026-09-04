@@ -13,21 +13,32 @@ export function getPendingList(): Promise<PendingItem[]> {
 
 /** 报价编辑数据（需求详情 + 已有报价） */
 export function getEditData(requirementId: number): Promise<{
+  requirementId: number
   reqNo: string
   quoteDeadline: string
   deliverDate: string
   remark: string
+  expired: boolean
+  quoteNo: string
+  quotePerson: string
+  quoteTime?: string
+  modifier?: string
+  modifyTime?: string
+  quoteRemark?: string | null
+  confirmDeliverDate?: string
+  totalAmount: number
   items: Array<{
+    id: number
     requirementItemId: number
     partNo: string
+    replaceNo: string
     partName: string
     quantity: number
     unit: string
     spec: string
     purchaseRemark: string
-    price: number
-    moq: number
-    quoted: boolean
+    unitPrice: number | null
+    quoteRemark: string | null
   }>
 }> {
   return request.get('/quotations/edit-data', { params: { requirementId } })

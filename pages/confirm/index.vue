@@ -55,7 +55,7 @@
     <!-- 列表区域 -->
     <a-card class="page-card list-card" title="报价单列表">
       <template #extra>
-        <a-space>
+        <a-space v-if="userStorage.get()?.role !== 'admin'">
           <span class="selected-count">已选 {{ selectedRowKeys.length }} 项</span>
           <a-button
             type="primary"
@@ -104,7 +104,7 @@
               <a-button
                 type="link"
                 size="small"
-                :disabled="!canAward(record)"
+                :disabled="!canAward(record) || userStorage.get()?.role === 'admin'"
                 @click="handleConfirm(record)"
               >
                 确认中标
@@ -133,8 +133,8 @@
             </template>
             <span v-else class="rank-mask">报价截止后排名</span>
           </a-descriptions-item>
-          <a-descriptions-item label="供应商名称">{{ detailQuote.quotePerson }}</a-descriptions-item>
-          <a-descriptions-item label="报价人">{{ detailQuote.quotePerson }}</a-descriptions-item>
+          <a-descriptions-item label="供应商名称">{{ detailQuote.awardedSupplierName || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="报价人">{{ detailQuote.quotePerson || '-' }}</a-descriptions-item>
           <a-descriptions-item label="报价金额">
             <template v-if="!detailQuote.expired">
               <span class="rank-mask">***</span>
@@ -171,6 +171,7 @@
           v-if="detailQuote && canAward(detailQuote)"
           type="primary"
           :loading="awarding"
+          :disabled="userStorage.get()?.role === 'admin' "
           @click="handleConfirm(detailQuote)"
         >
           确认中标
@@ -184,7 +185,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Modal, message } from 'ant-design-vue'
 import { awardQuotation, getConfirmDetail, getConfirmList } from '@/api/confirm'
-
+import { userStorage } from '@/utils/storage'
 import type { Quotation } from '@/types'
 
 type RowData = Quotation
@@ -273,7 +274,7 @@ const columns = [
   { title: '状态', key: 'status', align: 'center' as const },
   { title: '需求单号', dataIndex: 'reqNo', align: 'center' as const },
   { title: '报价单号', dataIndex: 'quoteNo', align: 'center' as const },
-  { title: '供应商名称', dataIndex: 'quotePerson', align: 'center' as const },
+  { title: '供应商名称', dataIndex: 'awardedSupplierName', align: 'center' as const },
   { title: '报价人', dataIndex: 'quotePerson', align: 'center' as const },
   { title: '报价金额', key: 'totalAmount', width: 130, align: 'center' as const },
   { title: '集中交货日期', dataIndex: 'deliverDate', align: 'center' as const },

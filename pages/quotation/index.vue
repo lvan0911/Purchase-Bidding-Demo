@@ -31,7 +31,11 @@
             style="width: 120px"
           >
             <a-select-option value="quoting">报价中</a-select-option>
+            <a-select-option value="awarded">已中标</a-select-option>
+            <a-select-option value="lost">未中标</a-select-option>
+            <a-select-option value="pending">待确认</a-select-option>
             <a-select-option value="expired">已截止</a-select-option>
+
           </a-select>
         </a-form-item>
         <a-form-item label="报价时间">
@@ -161,7 +165,11 @@ function getStatus(q: Quotation): StatusInfo {
     case 'awarded':
       return { value: 'awarded', text: '已中标', color: 'green' }
     case 'expired':
-      return { value: 'expired', text: '已截止', color: 'red' }
+      return { value: 'expired', text: '已截止', color: 'orange' }
+    case 'lost':
+      return { value: 'lost', text: '未中标', color: 'red' }
+    case 'pending':
+      return { value: 'pending', text: '待确认', color: 'orange' }
     default:
       return { value: 'quoting', text: '报价中', color: 'blue' }
   }

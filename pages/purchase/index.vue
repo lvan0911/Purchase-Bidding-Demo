@@ -72,9 +72,9 @@
             <a-tag :color="getStatus(record).color">{{ getStatus(record).text }}</a-tag>
           </template>
           <template v-else-if="column.key === 'action'">
-            <a-space v-if="userStorage.get()?.role === 'purchaser' || userStorage.get()?.role === 'admin'">
+            <a-space >
               <a-button type="link"  size="small"  @click="openDetail(record)">详情</a-button>
-              <a-button type="link" size="small" :disabled="record.status == 'awarded' || userStorage.get()?.role === 'admin'" @click="goEdit(record)">编辑</a-button>
+              <a-button type="link" size="small" v-if="userStorage.get()?.role === 'purchaser'" :disabled="record.status == 'awarded' || userStorage.get()?.role === 'admin'" @click="goEdit(record)">编辑</a-button>
             </a-space>
             <a-button type="link" size="small" :disabled="userStorage.get()?.role === 'admin' || record.status != 'quoting'"  v-if="userStorage.get()?.role === 'supplier' || userStorage.get()?.role === 'admin'" @click="goQuotation(record)">去报价</a-button>
           </template>
@@ -96,11 +96,13 @@
           <a-descriptions-item label="状态">
             <a-tag :color="getStatus(detail).color">{{ getStatus(detail).text }}</a-tag>
           </a-descriptions-item>
-          <a-descriptions-item label="报价截止日期">{{ detail.quoteDeadline }}</a-descriptions-item>
-          <a-descriptions-item label="集中交货日期">{{ detail.deliverDate }}</a-descriptions-item>
-          <a-descriptions-item label="创建人">{{ detail.creator }}</a-descriptions-item>
-          <a-descriptions-item label="创建时间">{{ detail.createTime }}</a-descriptions-item>
-          <a-descriptions-item label="修改人">{{ detail.modifier || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="报价截止日期">{{ detail.quoteDeadline || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="集中交货日期">{{ detail.deliverDate || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="创建人" v-if="detail.status == 'quoting'&& userStorage.get()?.role === 'supplier'||userStorage.get()?.role === 'admin'">***</a-descriptions-item>
+          <a-descriptions-item label="创建人" v-else>{{ detail.creator || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="创建时间">{{ detail.createTime || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="修改人" v-if="detail.status == 'quoting' && userStorage.get()?.role === 'supplier'||userStorage.get()?.role === 'admin'">***</a-descriptions-item>
+          <a-descriptions-item label="修改人" v-else>{{ detail.modifier || '-' }}</a-descriptions-item>
           <a-descriptions-item label="修改时间">{{ detail.modifyTime || '-' }}</a-descriptions-item>
           <a-descriptions-item label="需求备注" :span="2">{{ detail.remark || '-' }}</a-descriptions-item>
         </a-descriptions>

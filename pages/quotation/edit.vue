@@ -47,7 +47,7 @@
            <a-descriptions-item label="修改时间">{{ modifyTime || '-' }}</a-descriptions-item>
          <!-- <a-descriptions-item label="修改人">{{ modifier || '-' }}</a-descriptions-item>
           <a-descriptions-item label="备注" :span="2">{{ requirement.remark || '-' }}</a-descriptions-item> -->
-          <a-descriptions-item label="报价备注" :span="3">
+          <a-descriptions-item label="报价备注" :span="2">
             <a-textarea
               v-model:value="form.quoteRemark"
               :rows="2"

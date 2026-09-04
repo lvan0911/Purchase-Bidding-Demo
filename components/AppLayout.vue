@@ -117,7 +117,7 @@ async function onUserMenuClick({ key }: { key: string }): Promise<void> {
   if (key === 'logout') {
     Modal.confirm({
       centered: true,
-      className: 'logout-confirm-modal',
+      wrapClassName: 'logout-confirm-modal',
       icon: h(LogoutOutlined, { style: { color: '#ff4d4f', fontSize: 24 } }),
       title: '确认退出登录？',
       content: '退出后需要重新登录才能继续使用系统。',

@@ -38,6 +38,7 @@ export function getEditData(requirementId: number): Promise<{
     spec: string
     purchaseRemark: string
     unitPrice: number | null
+    moq?: number
     quoteRemark: string | null
   }>
 }> {

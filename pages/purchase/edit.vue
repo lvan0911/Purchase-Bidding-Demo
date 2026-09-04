@@ -237,7 +237,7 @@ onMounted(async () => {
       form.quoteDeadline = dayjs(detail.quoteDeadline)
       form.deliverDate = dayjs(detail.deliverDate)
       form.remark = detail.remark || ''
-      items.value = detail.items.map((i) => ({ ...i }))
+      items.value = (detail.items ?? []).map((i) => ({ ...i }))
     } else {
       reqNo.value = await getNextReqNo()
     }

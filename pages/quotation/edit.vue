@@ -315,7 +315,7 @@ const quoteForm = reactive({
 function openQuoteModal(item: QuoteItem): void {
   quoteTarget.value = item
   quoteForm.unitPrice = item.unitPrice ?? undefined
-  quoteForm.quoteRemark = item.quoteRemark
+  quoteForm.quoteRemark = item.quoteRemark ?? ''
   quoteModalOpen.value = true
 }
 
@@ -368,7 +368,7 @@ async function handleSubmit(): Promise<void> {
     quoteRemark: form.quoteRemark.trim() || undefined,
     items: items.value.map((i) => ({
       id: i.id,
-      requirementItemId: i.requirementItemId,
+      requirementItemId: i.requirementItemId ?? 0,
       partNo: i.partNo,
       replaceNo: i.replaceNo,
       partName: i.partName,
@@ -377,6 +377,9 @@ async function handleSubmit(): Promise<void> {
       spec: i.spec,
       purchaseRemark: i.purchaseRemark,
       unitPrice: i.unitPrice ?? undefined,
+      price: i.unitPrice ?? 0,
+      moq: i.moq,
+      quoteRemark: i.quoteRemark || undefined,
     })),
   }
 

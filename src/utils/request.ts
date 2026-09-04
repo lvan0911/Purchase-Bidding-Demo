@@ -29,7 +29,7 @@ service.interceptors.request.use(
 
 /** 响应拦截器：统一处理 */
 service.interceptors.response.use(
-  (response) => {
+  (response): any => {
     const res = response.data as ApiResponse
     // 成功码为 0（从 Swagger 示例值确认）
     if (res.code !== 0) {

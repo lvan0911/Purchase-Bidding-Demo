@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { PageResult, PurchaseRequirement, RequirementQuery } from '@/types'
+import type { PageResult, PurchaseRequirement, RequirementItem, RequirementQuery } from '@/types'
 
 /** 分页查询需求 */
 export function getRequirementPage(query: RequirementQuery): Promise<PageResult<PurchaseRequirement>> {
@@ -17,6 +17,10 @@ export function getNextReqNo(): Promise<string> {
 }
 
 /** 发布/保存需求（id为空新增，否则编辑） */
-export function saveRequirement(data: Partial<PurchaseRequirement> & { items: PurchaseRequirement['items'] }): Promise<void> {
+export function saveRequirement(
+  data: Partial<Omit<PurchaseRequirement, 'items'>> & {
+    items: Array<Omit<RequirementItem, 'id'> & { id?: number }>
+  },
+): Promise<void> {
   return request.post('/requirements', data)
 }

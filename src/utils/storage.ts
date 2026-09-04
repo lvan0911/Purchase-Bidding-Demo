@@ -65,14 +65,14 @@ export const accountStorage = {
     }
     write(KEY_ACCOUNTS, list)
   },
-  remove(id: string): void {
+  remove(id: number): void {
     write(
       KEY_ACCOUNTS,
       accountStorage.list().filter((a) => a.id !== id),
     )
   },
   /** 判断手机号是否已被占用（排除指定 id） */
-  phoneExists(phone: string, excludeId?: string): boolean {
+  phoneExists(phone: string, excludeId?: number): boolean {
     return accountStorage
       .list()
       .some((a) => a.phone === phone && a.id !== excludeId)
@@ -84,7 +84,7 @@ export const requirementStorage = {
   list(): PurchaseRequirement[] {
     return read<PurchaseRequirement[]>(KEY_REQUIREMENTS) ?? []
   },
-  getById(id: string): PurchaseRequirement | null {
+  getById(id: number): PurchaseRequirement | null {
     return requirementStorage.list().find((r) => r.id === id) ?? null
   },
   save(requirement: PurchaseRequirement): void {
@@ -115,11 +115,11 @@ export const quotationStorage = {
     }
     write(KEY_QUOTATIONS, list)
   },
-  listByRequirement(requirementId: string): Quotation[] {
+  listByRequirement(requirementId: number): Quotation[] {
     return quotationStorage.list().filter((q) => q.requirementId === requirementId)
   },
   /** 按报价人 + 需求查找报价单（一个报价人一份报价单，支持多次编辑回填） */
-  findByPersonAndRequirement(person: string, requirementId: string): Quotation | null {
+  findByPersonAndRequirement(person: string, requirementId: number): Quotation | null {
     return (
       quotationStorage
         .list()
@@ -133,7 +133,7 @@ export const awardStorage = {
   list(): AwardResult[] {
     return read<AwardResult[]>(KEY_AWARDS) ?? []
   },
-  getByRequirement(requirementId: string): AwardResult | null {
+  getByRequirement(requirementId: number): AwardResult | null {
     return awardStorage.list().find((a) => a.requirementId === requirementId) ?? null
   },
   save(award: AwardResult): void {

@@ -206,6 +206,8 @@ export interface Quotation {
   expired?: boolean
   /** 排名（采购确认列表返回，1=推荐中标） */
   rank?: number
+  /** 中标供应商名称（确认详情返回） */
+  awardedSupplierName?: string
   /** 商品明细（详情接口才有） */
   items?: QuoteItem[]
 }
@@ -234,7 +236,7 @@ export interface PendingItem {
 
 /** 中标结果 */
 export interface AwardResult {
-  requirementId: string
+  requirementId: number
   reqNo: string
   quoteNo: string
   /** 中标供应商（报价人） */

@@ -98,10 +98,10 @@
           </a-descriptions-item>
           <a-descriptions-item label="报价截止日期">{{ detail.quoteDeadline || '-' }}</a-descriptions-item>
           <a-descriptions-item label="集中交货日期">{{ detail.deliverDate || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="创建人" v-if="detail.status == 'quoting'&& userStorage.get()?.role === 'supplier'||userStorage.get()?.role === 'admin'">***</a-descriptions-item>
+          <a-descriptions-item label="创建人" v-if="detail.status == 'quoting'&& userStorage.get()?.role === 'supplier'">***</a-descriptions-item>
           <a-descriptions-item label="创建人" v-else>{{ detail.creator || '-' }}</a-descriptions-item>
           <a-descriptions-item label="创建时间">{{ detail.createTime || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="修改人" v-if="detail.status == 'quoting' && userStorage.get()?.role === 'supplier'||userStorage.get()?.role === 'admin'">***</a-descriptions-item>
+          <a-descriptions-item label="修改人" v-if="detail.status == 'quoting' && userStorage.get()?.role === 'supplier'">***</a-descriptions-item>
           <a-descriptions-item label="修改人" v-else>{{ detail.modifier || '-' }}</a-descriptions-item>
           <a-descriptions-item label="修改时间">{{ detail.modifyTime || '-' }}</a-descriptions-item>
           <a-descriptions-item label="需求备注" :span="2">{{ detail.remark || '-' }}</a-descriptions-item>

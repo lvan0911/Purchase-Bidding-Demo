@@ -483,6 +483,12 @@ function goQuotation(req: PurchaseRequirement): void {
 .detail-modal-wrap .ant-modal-body {
   padding: 20px 24px 24px;
   background: linear-gradient(180deg, #f7faff 0%, #ffffff 160px);
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.detail-modal-wrap .ant-descriptions:last-child .ant-descriptions-view {
+  overflow-x: auto;
 }
 
 .detail-modal-wrap .ant-descriptions-title {

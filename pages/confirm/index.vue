@@ -38,9 +38,9 @@
             allow-clear
             style="width: 120px"
           >
-            <a-select-option value="quoting">报价中</a-select-option>
-            <a-select-option value="pending">待确认</a-select-option>
             <a-select-option value="awarded">已中标</a-select-option>
+            <a-select-option value="pending">待确认</a-select-option>
+            <a-select-option value="lost">未中标</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item>
@@ -134,7 +134,7 @@
             </template>
             <span v-else class="rank-mask">报价截止后排名</span>
           </a-descriptions-item>
-          <a-descriptions-item label="供应商名称">{{ detailQuote.awardedSupplierName || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="供应商名称">{{ detailQuote.supplierName || '-' }}</a-descriptions-item>
           <a-descriptions-item label="报价人">{{ detailQuote.quotePerson || '-' }}</a-descriptions-item>
           <a-descriptions-item label="报价金额">
             <template v-if="!detailQuote.expired">
@@ -266,6 +266,8 @@ function getStatus(q: Quotation): StatusInfo {
       return { text: '待确认', color: 'orange' }
     case 'expired':
       return { text: '已截止', color: 'red' }
+    case 'lost':
+      return { text: '未中标', color: 'red' }
     default:
       return { text: '报价中', color: 'blue' }
   }
@@ -276,7 +278,7 @@ const columns = [
   { title: '状态', key: 'status', align: 'center' as const },
   { title: '需求单号', dataIndex: 'reqNo', align: 'center' as const },
   { title: '报价单号', dataIndex: 'quoteNo', align: 'center' as const },
-  { title: '供应商名称', dataIndex: 'awardedSupplierName', align: 'center' as const },
+  { title: '供应商名称', dataIndex: 'supplierName', align: 'center' as const },
   { title: '报价人', dataIndex: 'quotePerson', align: 'center' as const },
   { title: '报价金额', key: 'totalAmount', width: 130, align: 'center' as const },
   { title: '集中交货日期', dataIndex: 'deliverDate', align: 'center' as const },

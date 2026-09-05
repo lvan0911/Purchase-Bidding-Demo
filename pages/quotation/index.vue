@@ -34,8 +34,6 @@
             <a-select-option value="awarded">已中标</a-select-option>
             <a-select-option value="lost">未中标</a-select-option>
             <a-select-option value="pending">待确认</a-select-option>
-            <a-select-option value="expired">已截止</a-select-option>
-
           </a-select>
         </a-form-item>
         <a-form-item label="报价时间">

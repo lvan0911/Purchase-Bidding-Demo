@@ -161,12 +161,10 @@ interface StatusInfo {
 
 function getStatus(req: PurchaseRequirement): StatusInfo {
   switch (req.status) {
-    case 'awarded':
-      return { value: 'awarded', text: '已中标', color: 'green' }
-    case 'expired':
-      return { value: 'expired', text: '已截止', color: 'red' }
-    default:
+    case 'quoting':
       return { value: 'quoting', text: '报价中', color: 'blue' }
+    default:
+      return { value: 'expired', text: '已截止', color: 'red' }
   }
 }
 

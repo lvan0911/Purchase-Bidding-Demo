@@ -85,7 +85,9 @@
               <span class="rank-number" :class="{ 'rank-first-number': record.rank === 1 }">
                 {{ record.rank }}
               </span>
-              <a-tag v-if="record.rank === 1" color="gold" class="rank-tag">推荐中标</a-tag>
+              <span v-if="record.rank === 1" class="rank-tag">
+                <LikeOutlined />
+              </span>
             </template>
             <span v-else class="rank-mask">-</span>
           </template>
@@ -130,7 +132,8 @@
               <span :class="{ 'rank-first-text': detailQuote.rank === 1 }">
                 第 {{ detailQuote.rank }} 名
               </span>
-              <a-tag v-if="detailQuote.rank === 1" color="gold">推荐中标</a-tag>
+             <a-tag :color="getStatus(detailQuote).color">{{ getStatus(detailQuote).text }}</a-tag>
+              <!-- <a-tag v-if="detailQuote.rank === 1" color="gold">推荐中标</a-tag> -->
             </template>
             <span v-else class="rank-mask">报价截止后排名</span>
           </a-descriptions-item>
@@ -186,6 +189,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Modal, message } from 'ant-design-vue'
+import { LikeOutlined } from '@ant-design/icons-vue'
 import { awardQuotation, getConfirmDetail, getConfirmList } from '@/api/confirm'
 import { userStorage } from '@/utils/storage'
 import type { Quotation } from '@/types'
@@ -544,7 +548,7 @@ onMounted(() => {
   border-right: 1px solid #e3ebf8;
 }
 .list-card :deep(.ant-table-cell) {
-  padding: 5px 8px !important;
+  padding: 10px 8px !important;
 }
 
 .list-card :deep(.ant-table-thead > tr > th:last-child) {
@@ -552,6 +556,7 @@ onMounted(() => {
 }
 
 .list-card :deep(.ant-table-tbody > tr > td) {
+  position: relative;
   border-bottom: 1px solid #f2f5fa;
   border-right: 1px solid #f2f5fa;
   transition: background-color 0.2s ease;
@@ -616,7 +621,31 @@ onMounted(() => {
 }
 
 .rank-tag {
-  margin-left: 6px;
+  position: absolute;
+  top: 5px;
+  left: 15px;
+  color: #1677ff;
+  font-size: 20px;
+  transform-origin: 50% 90%;
+  animation: thumb-bounce 1s ease-in-out infinite;
+}
+
+@keyframes thumb-bounce {
+  0%, 45%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  10% {
+    transform: scale(1.35) rotate(-12deg);
+  }
+  20% {
+    transform: scale(1.1) rotate(8deg);
+  }
+  30% {
+    transform: scale(1.25) rotate(-6deg);
+  }
+  38% {
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 .rank-first-text {

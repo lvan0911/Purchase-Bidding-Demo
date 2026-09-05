@@ -101,6 +101,7 @@
       <template v-if="detailQuote">
         <a-descriptions :column="2" bordered size="small" class="detail-desc">
           <a-descriptions-item label="需求单号">{{ detailQuote.reqNo }}</a-descriptions-item>
+          <a-descriptions-item label="状态" ><a-tag :color="getStatus(detailQuote).color">{{ getStatus(detailQuote).text }}</a-tag></a-descriptions-item>
           <a-descriptions-item label="报价人">{{ detailQuote.quotePerson }}</a-descriptions-item>
           <a-descriptions-item label="报价金额">
             <b>{{ formatMoney(detailQuote.totalAmount) }}</b>

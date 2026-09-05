@@ -494,6 +494,10 @@ async function removeUser(account: UserAccount): Promise<void> {
   border-right: 1px solid #e3ebf8;
 }
 
+.list-card :deep(.ant-table-cell) {
+  padding: 10px 8px !important;
+}
+
 .list-card :deep(.ant-table-thead > tr > th:last-child) {
   border-right: none;
 }

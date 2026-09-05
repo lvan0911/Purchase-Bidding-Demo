@@ -275,16 +275,16 @@ function getStatus(q: Quotation): StatusInfo {
 
 const columns = [
   { title: '排名', key: 'rank', width: 110, align: 'center' as const },
-  { title: '状态', key: 'status', align: 'center' as const },
+  { title: '状态', key: 'status', width: 80, align: 'center' as const },
   { title: '需求单号', dataIndex: 'reqNo', align: 'center' as const },
   { title: '报价单号', dataIndex: 'quoteNo', align: 'center' as const },
   { title: '供应商名称', dataIndex: 'supplierName', align: 'center' as const },
-  { title: '报价人', dataIndex: 'quotePerson', align: 'center' as const },
+  { title: '报价人', dataIndex: 'quotePerson', width: 100, align: 'center' as const },
   { title: '报价金额', key: 'totalAmount', width: 130, align: 'center' as const },
   { title: '集中交货日期', dataIndex: 'deliverDate', align: 'center' as const },
   { title: '确定交货日期', dataIndex: 'confirmDeliverDate', align: 'center' as const },
   { title: '报价时间', dataIndex: 'quoteTime', align: 'center' as const },
-  { title: '操作', key: 'action', width: 140, fixed: 'right' as const },
+  { title: '操作', key: 'action', width: 140, align: 'center' as const },
 ]
 
 const detailColumns = [
@@ -399,6 +399,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* .page-container {
+   padding: 0 24px 0px !important;
+} */
 .search-card {
   margin-bottom: 16px;
   position: relative;
@@ -538,11 +541,24 @@ onMounted(() => {
   color: #1d2b4f;
   font-weight: 600;
   border-bottom: 1px solid #e3ebf8;
+  border-right: 1px solid #e3ebf8;
+}
+.list-card :deep(.ant-table-cell) {
+  padding: 5px 8px !important;
+}
+
+.list-card :deep(.ant-table-thead > tr > th:last-child) {
+  border-right: none;
 }
 
 .list-card :deep(.ant-table-tbody > tr > td) {
   border-bottom: 1px solid #f2f5fa;
+  border-right: 1px solid #f2f5fa;
   transition: background-color 0.2s ease;
+}
+
+.list-card :deep(.ant-table-tbody > tr > td:last-child) {
+  border-right: none;
 }
 
 .list-card :deep(.ant-table-tbody > tr:hover > td) {
@@ -679,5 +695,9 @@ onMounted(() => {
   border-radius: 8px;
   background: linear-gradient(135deg, #1677ff, #4096ff);
   box-shadow: 0 2px 8px rgba(22, 119, 255, 0.35);
+}
+/* 覆盖父组件 AppLayout 的内容区内边距，去掉底部 padding */
+.app-content {
+  padding: 24px 0 0 !important;
 }
 </style>

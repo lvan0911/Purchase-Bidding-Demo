@@ -207,7 +207,7 @@ onMounted(fetchList)
 /** 基础列 */
 const baseColumns = [
   { title: '需求单号', dataIndex: 'reqNo', width: 120 , align: 'center' as const},
-  { title: '商品数量', key: 'itemCount', width: 90, align: 'center' as const },
+  { title: '商品数量', key: 'itemCount', width: 60, align: 'center' as const },
   { title: '报价截止日期', dataIndex: 'quoteDeadline', width: 180 , align: 'center' as const},
   { title: '集中交货日期', dataIndex: 'deliverDate', width: 130 , align: 'center' as const},
   { title: '创建人', dataIndex: 'creator', width: 110 , align: 'center' as const},
@@ -270,6 +270,7 @@ function goQuotation(req: PurchaseRequirement): void {
 
 <style scoped>
 .search-card {
+  flex-shrink: 0;
   margin-bottom: 16px;
   position: relative;
   border: none;
@@ -359,6 +360,10 @@ function goQuotation(req: PurchaseRequirement): void {
 }
 
 .list-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border: none;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(15, 34, 78, 0.06);
@@ -390,6 +395,9 @@ function goQuotation(req: PurchaseRequirement): void {
 }
 
 .list-card :deep(.ant-card-body) {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   padding: 8px 20px 16px;
 }
 
@@ -398,11 +406,25 @@ function goQuotation(req: PurchaseRequirement): void {
   color: #1d2b4f;
   font-weight: 600;
   border-bottom: 1px solid #e3ebf8;
+  border-right: 1px solid #e3ebf8;
+}
+
+.list-card :deep(.ant-table-cell) {
+  padding: 10px 8px !important;
+}
+
+.list-card :deep(.ant-table-thead > tr > th:last-child) {
+  border-right: none;
 }
 
 .list-card :deep(.ant-table-tbody > tr > td) {
   border-bottom: 1px solid #f2f5fa;
+  border-right: 1px solid #f2f5fa;
   transition: background-color 0.2s ease;
+}
+
+.list-card :deep(.ant-table-tbody > tr > td:last-child) {
+  border-right: none;
 }
 
 .list-card :deep(.ant-table-tbody > tr:hover > td) {
@@ -525,10 +547,20 @@ function goQuotation(req: PurchaseRequirement): void {
   color: #1d2b4f;
   font-weight: 600;
   border-bottom: 1px solid #e3ebf8;
+  border-right: 1px solid #e3ebf8;
+}
+
+.detail-modal-wrap .ant-table-thead > tr > th:first-child {
+  border-left: 1px solid #e3ebf8;
 }
 
 .detail-modal-wrap .ant-table-tbody > tr > td {
   border-bottom: 1px solid #f2f5fa;
+  border-right: 1px solid #f2f5fa;
+}
+
+.detail-modal-wrap .ant-table-tbody > tr > td:first-child {
+  border-left: 1px solid #f2f5fa;
 }
 
 .detail-modal-wrap .ant-table-tbody > tr:hover > td {
@@ -540,5 +572,10 @@ function goQuotation(req: PurchaseRequirement): void {
   border-radius: 8px;
   background: linear-gradient(135deg, #1677ff, #4096ff);
   box-shadow: 0 2px 8px rgba(22, 119, 255, 0.35);
+}
+
+/* 覆盖父组件 AppLayout 的内容区内边距，去掉底部 padding */
+.app-content {
+  padding: 24px 0 0 !important;
 }
 </style>

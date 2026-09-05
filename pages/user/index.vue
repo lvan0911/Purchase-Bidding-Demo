@@ -491,11 +491,21 @@ async function removeUser(account: UserAccount): Promise<void> {
   color: #1d2b4f;
   font-weight: 600;
   border-bottom: 1px solid #e3ebf8;
+  border-right: 1px solid #e3ebf8;
+}
+
+.list-card :deep(.ant-table-thead > tr > th:last-child) {
+  border-right: none;
 }
 
 .list-card :deep(.ant-table-tbody > tr > td) {
   border-bottom: 1px solid #f2f5fa;
+  border-right: 1px solid #f2f5fa;
   transition: background-color 0.2s ease;
+}
+
+.list-card :deep(.ant-table-tbody > tr > td:last-child) {
+  border-right: none;
 }
 
 .list-card :deep(.ant-table-tbody > tr:hover > td) {

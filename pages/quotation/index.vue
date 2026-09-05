@@ -272,6 +272,17 @@ async function openDetail(q: Quotation): Promise<void> {
 </script>
 
 <style scoped>
+.page-container {
+  height: calc(100vh - 116px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.page-header {
+  flex-shrink: 0;
+}
 .search-card {
   margin-bottom: 16px;
   position: relative;
@@ -401,11 +412,25 @@ async function openDetail(q: Quotation): Promise<void> {
   color: #1d2b4f;
   font-weight: 600;
   border-bottom: 1px solid #e3ebf8;
+  border-right: 1px solid #e3ebf8;
+}
+
+.list-card :deep(.ant-table-cell) {
+  padding: 10px 8px !important;
+}
+
+.list-card :deep(.ant-table-thead > tr > th:last-child) {
+  border-right: none;
 }
 
 .list-card :deep(.ant-table-tbody > tr > td) {
   border-bottom: 1px solid #f2f5fa;
+  border-right: 1px solid #f2f5fa;
   transition: background-color 0.2s ease;
+}
+
+.list-card :deep(.ant-table-tbody > tr > td:last-child) {
+  border-right: none;
 }
 
 .list-card :deep(.ant-table-tbody > tr:hover > td) {
@@ -496,10 +521,20 @@ async function openDetail(q: Quotation): Promise<void> {
   color: #1d2b4f;
   font-weight: 600;
   border-bottom: 1px solid #e3ebf8;
+  border-right: 1px solid #e3ebf8;
+}
+
+.detail-modal-wrap .ant-table-thead > tr > th:first-child {
+  border-left: 1px solid #e3ebf8;
 }
 
 .detail-modal-wrap .ant-table-tbody > tr > td {
   border-bottom: 1px solid #f2f5fa;
+  border-right: 1px solid #f2f5fa;
+}
+
+.detail-modal-wrap .ant-table-tbody > tr > td:first-child {
+  border-left: 1px solid #f2f5fa;
 }
 
 .detail-modal-wrap .ant-table-tbody > tr:hover > td {

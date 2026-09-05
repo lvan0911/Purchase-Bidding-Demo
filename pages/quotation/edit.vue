@@ -307,7 +307,7 @@ function saveDraft(item: QuoteItem): void {
     items: items.value.map((i) => ({ ...i })),
     savedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
   })
-  message.success(`【${item.partName}】已暂存`)
+  message.success(`【商品清单报价】已暂存`)
 }
 
 /* ---------- 商品详情 ---------- */

@@ -468,8 +468,8 @@ onMounted(() => {
 .search-card :deep(.ant-input:focus),
 .search-card :deep(.ant-select-focused .ant-select-selector),
 .search-card :deep(.ant-picker-focused) {
-  border-color: #1677ff !important;
-  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1) !important;
+  /* border-color: #1677ff !important;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1) !important; */
 }
 
 .search-card :deep(.ant-btn-primary) {

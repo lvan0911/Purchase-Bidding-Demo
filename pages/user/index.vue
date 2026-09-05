@@ -330,7 +330,7 @@ async function handleSave(): Promise<void> {
         enabled: form.enabled,
         ...(form.password ? { password: form.password } : {}),
       })
-      message.success('用户已更新')
+      message.success('列表已更新')
     } else {
       await createUser({
         phone: form.phone.trim(),

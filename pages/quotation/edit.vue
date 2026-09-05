@@ -34,6 +34,7 @@
               style="width: 100%"
               placeholder="请选择确定交货日期（必填）"
               :disabled="isExpired"
+              :disabled-date="disabledDate"
             />
           </a-descriptions-item>
           <a-descriptions-item label="报价人">
@@ -89,8 +90,8 @@
             <template v-else-if="column.key === 'action'">
               <a-space>
                 <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-                <a-button type="link" size="small" :disabled="isExpired" @click="openQuoteModal(record)">
-                  报价
+                <a-button type="link" size="small" :disabled="isExpired" @click="saveDraft(record)">
+                  暂存
                 </a-button>
               </a-space>
             </template>
@@ -118,49 +119,6 @@
           提交报价
         </a-button>
       </div>
-
-      <!-- 单行报价 -->
-      <a-modal
-        v-model:open="quoteModalOpen"
-        title="商品报价"
-        ok-text="保存报价"
-        cancel-text="取消"
-        wrap-class-name="detail-modal-wrap"
-        @ok="saveQuote"
-      >
-        <template v-if="quoteTarget">
-          <a-descriptions :column="2" bordered size="small" class="quote-target-desc">
-            <a-descriptions-item label="配件图号">{{ quoteTarget.partNo }}</a-descriptions-item>
-            <a-descriptions-item label="配件名称">{{ quoteTarget.partName }}</a-descriptions-item>
-            <a-descriptions-item label="通用/替换号">{{ quoteTarget.replaceNo || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="采购数量">{{ quoteTarget.quantity }} {{ quoteTarget.unit }}</a-descriptions-item>
-            <a-descriptions-item label="规格型号">{{ quoteTarget.spec || '-' }}</a-descriptions-item>
-            <a-descriptions-item label="采购备注">{{ quoteTarget.purchaseRemark || '-' }}</a-descriptions-item>
-          </a-descriptions>
-          <a-form
-            :label-col="{ span: 6 }"
-            :wrapper-col="{ span: 17 }"
-            class="quote-target-form"
-          >
-            <a-form-item label="单价" required>
-              <a-input-number
-                v-model:value="quoteForm.unitPrice"
-                :min="0.01"
-                :precision="2"
-                style="width: 100%"
-                placeholder="请输入单价（必填）"
-              />
-            </a-form-item>
-            <a-form-item label="报价备注">
-              <a-textarea
-                v-model:value="quoteForm.quoteRemark"
-                :rows="2"
-                placeholder="该项商品报价备注（选填）"
-              />
-            </a-form-item>
-          </a-form>
-        </template>
-      </a-modal>
 
       <!-- 商品详情 -->
       <a-modal v-model:open="detailOpen" title="商品详情" :footer="null" wrap-class-name="detail-modal-wrap">
@@ -190,7 +148,7 @@ import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { getEditData, submitQuotation } from '@/api/quotation'
-import { userStorage } from '@/utils/storage'
+import { userStorage, quotationDraftStorage } from '@/utils/storage'
 import type { QuoteItem } from '@/types'
 
 const route = useRoute()
@@ -222,6 +180,12 @@ const form = reactive({
 })
 
 const items = ref<QuoteItem[]>([])
+
+/** 禁用今天之前的日期 */
+function disabledDate(current: Dayjs | undefined): boolean {
+  if (!current) return false
+  return current < dayjs().startOf('day')
+}
 
 /** 初始化：调后端获取需求详情 + 已有报价 */
 onMounted(async () => {
@@ -262,6 +226,26 @@ onMounted(async () => {
       quoted: !!it.unitPrice,
       quoteRemark: it.quoteRemark || '',
     }))
+    // 若存在本地暂存草稿，优先用草稿覆盖（单价、报价备注、确定交货日期、报价人、报价备注）
+    const draft = quotationDraftStorage.get(requirementId)
+    if (draft) {
+      form.quotePerson = draft.quotePerson || form.quotePerson
+      form.confirmDeliverDate = draft.confirmDeliverDate
+        ? dayjs(draft.confirmDeliverDate)
+        : form.confirmDeliverDate
+      form.quoteRemark = draft.quoteRemark ?? form.quoteRemark
+      const draftMap = new Map(draft.items.map((it) => [it.requirementItemId ?? it.id, it]))
+      items.value = items.value.map((it) => {
+        const d = draftMap.get(it.requirementItemId ?? it.id)
+        if (!d) return it
+        return {
+          ...it,
+          unitPrice: d.unitPrice ?? it.unitPrice,
+          quoteRemark: d.quoteRemark ?? it.quoteRemark,
+          quoted: !!d.unitPrice,
+        }
+      })
+    }
   } finally {
     loading.value = false
   }
@@ -304,31 +288,26 @@ function formatMoney(value: number): string {
   return `¥ ${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
 }
 
-/* ---------- 单行报价 ---------- */
-const quoteModalOpen = ref(false)
-const quoteTarget = ref<QuoteItem | null>(null)
-const quoteForm = reactive({
-  unitPrice: undefined as number | undefined,
-  quoteRemark: '',
-})
-
-function openQuoteModal(item: QuoteItem): void {
-  quoteTarget.value = item
-  quoteForm.unitPrice = item.unitPrice ?? undefined
-  quoteForm.quoteRemark = item.quoteRemark ?? ''
-  quoteModalOpen.value = true
-}
-
-function saveQuote(): void {
-  if (!quoteTarget.value) return
-  if (!quoteForm.unitPrice || quoteForm.unitPrice <= 0) {
-    message.error('请填写单价且必须大于 0')
+/* ---------- 行内暂存 ---------- */
+function saveDraft(item: QuoteItem): void {
+  if (!item.unitPrice || item.unitPrice <= 0) {
+    message.error(`【${item.partName}】请填写单价且必须大于 0`)
     return
   }
-  quoteTarget.value.unitPrice = quoteForm.unitPrice
-  quoteTarget.value.quoteRemark = quoteForm.quoteRemark.trim()
-  quoteModalOpen.value = false
-  message.success(`商品【${quoteTarget.value.partName}】报价已填写`)
+  item.quoted = true
+  item.quoteRemark = (item.quoteRemark ?? '').trim()
+  // 写入本地草稿，确保退出再进入数据不丢失
+  quotationDraftStorage.save({
+    requirementId,
+    quotePerson: form.quotePerson.trim(),
+    confirmDeliverDate: form.confirmDeliverDate
+      ? form.confirmDeliverDate.format('YYYY-MM-DD')
+      : null,
+    quoteRemark: form.quoteRemark,
+    items: items.value.map((i) => ({ ...i })),
+    savedAt: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+  })
+  message.success(`【${item.partName}】已暂存`)
 }
 
 /* ---------- 商品详情 ---------- */
@@ -385,6 +364,7 @@ async function handleSubmit(): Promise<void> {
 
   try {
     await submitQuotation(payload)
+    quotationDraftStorage.remove(requirementId)
     message.success('报价提交成功')
     router.push('/quotation')
   } finally {
@@ -563,14 +543,6 @@ async function handleSubmit(): Promise<void> {
 .submit-bar :deep(.ant-btn-primary:hover):not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(22, 119, 255, 0.45);
-}
-
-.quote-target-desc {
-  margin-bottom: 16px;
-}
-
-.quote-target-form {
-  margin-top: 16px;
 }
 </style>
 

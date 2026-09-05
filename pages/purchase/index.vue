@@ -24,7 +24,8 @@
           />
         </a-form-item>
         <a-form-item label="报价截止日期">
-          <a-range-picker v-model:value="query.deadlineRange" style="width: 280px" />
+          <!-- 开始时间文字  结束时间文字 -->
+          <a-range-picker  v-model:value="query.deadlineRange" style="width: 280px"  />
         </a-form-item>
         <a-form-item label="状态">
           <a-select
@@ -35,7 +36,6 @@
           >
             <a-select-option value="quoting">报价中</a-select-option>
             <a-select-option value="expired">已截止</a-select-option>
-            <a-select-option value="awarded">已中标</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item>

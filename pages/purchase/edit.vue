@@ -26,6 +26,8 @@
                 show-time
                 style="width: 100%"
                 placeholder="请选择报价截止日期（年-月-日 时:分:秒）"
+                :disabled-date="disabledDate"
+                :disabled-time="disabledTime"
               />
             </a-form-item>
           </a-col>
@@ -35,6 +37,7 @@
                 v-model:value="form.deliverDate"
                 style="width: 100%"
                 placeholder="请选择集中交货日期"
+                :disabled-date="disabledDate"
               />
             </a-form-item>
           </a-col>
@@ -62,7 +65,7 @@
             <a-form-item label="需求备注" name="remark">
               <a-textarea
                 v-model:value="form.remark"
-                :rows="3"
+                :rows="2"
                 placeholder="需求单整体备注（选填）"
               />
             </a-form-item>
@@ -216,6 +219,37 @@ const form = reactive({
 const rules = {
   quoteDeadline: [{ required: true, message: '请选择报价截止日期', trigger: 'change' }],
   deliverDate: [{ required: true, message: '请选择集中交货日期', trigger: 'change' }],
+}
+
+/** 生成 [start, end) 区间整数数组 */
+function numberRange(start: number, end: number): number[] {
+  const result: number[] = []
+  for (let i = start; i < end; i++) result.push(i)
+  return result
+}
+
+/** 禁用今天之前的日期 */
+function disabledDate(current: Dayjs | undefined): boolean {
+  if (!current) return false
+  return current < dayjs().startOf('day')
+}
+
+/** 选择当天时禁用已过去的时、分、秒 */
+function disabledTime(current: Dayjs | undefined) {
+  const now = dayjs()
+  if (!current || !current.isSame(now, 'day')) {
+    return {
+      disabledHours: () => [],
+      disabledMinutes: () => [],
+      disabledSeconds: () => [],
+    }
+  }
+  return {
+    disabledHours: () => numberRange(0, now.hour()),
+    disabledMinutes: (h: number) => (h === now.hour() ? numberRange(0, now.minute()) : []),
+    disabledSeconds: (h: number, m: number) =>
+      h === now.hour() && m === now.minute() ? numberRange(0, now.second()) : [],
+  }
 }
 
 const items = ref<RequirementItem[]>([])
@@ -491,17 +525,29 @@ async function submitRequirement(): Promise<void> {
   color: #1d2b4f;
   font-weight: 600;
   border-bottom: 1px solid #e3ebf8;
+  border-right: 1px solid #e3ebf8;
+}
+
+.items-card :deep(.ant-table-thead > tr > th:first-child) {
+  border-left: 1px solid #e3ebf8;
 }
 
 .items-card :deep(.ant-table-tbody > tr > td) {
   border-bottom: 1px solid #f2f5fa;
+  border-right: 1px solid #f2f5fa;
   transition: background-color 0.2s ease;
+}
+
+.items-card :deep(.ant-table-tbody > tr > td:first-child) {
+  border-left: 1px solid #f2f5fa;
 }
 
 .items-card :deep(.ant-table-tbody > tr:hover > td) {
   background: #f4f8ff !important;
 }
-
+.items-card :deep(.ant-table-cell) {
+  padding: 6px 8px !important;
+}
 .items-card :deep(.ant-tag) {
   border: none;
   border-radius: 999px;

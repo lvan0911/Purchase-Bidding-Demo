@@ -24,7 +24,8 @@
           />
         </a-form-item>
         <a-form-item label="报价截止日期">
-          <a-range-picker v-model:value="query.deadlineRange" style="width: 280px" />
+          <!-- 开始时间文字  结束时间文字 -->
+          <a-range-picker  v-model:value="query.deadlineRange" style="width: 280px"  />
         </a-form-item>
         <a-form-item label="状态">
           <a-select
@@ -35,7 +36,6 @@
           >
             <a-select-option value="quoting">报价中</a-select-option>
             <a-select-option value="expired">已截止</a-select-option>
-            <a-select-option value="awarded">已中标</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item>
@@ -98,10 +98,10 @@
           </a-descriptions-item>
           <a-descriptions-item label="报价截止日期">{{ detail.quoteDeadline || '-' }}</a-descriptions-item>
           <a-descriptions-item label="集中交货日期">{{ detail.deliverDate || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="创建人" v-if="detail.status == 'quoting'&& userStorage.get()?.role === 'supplier'">***</a-descriptions-item>
+          <a-descriptions-item label="创建人" v-if="detail.status == 'quoting'&& (userStorage.get()?.role === 'supplier'||userStorage.get()?.role === 'admin')">***</a-descriptions-item>
           <a-descriptions-item label="创建人" v-else>{{ detail.creator || '-' }}</a-descriptions-item>
           <a-descriptions-item label="创建时间">{{ detail.createTime || '-' }}</a-descriptions-item>
-          <a-descriptions-item label="修改人" v-if="detail.status == 'quoting' && userStorage.get()?.role === 'supplier'">***</a-descriptions-item>
+          <a-descriptions-item label="修改人" v-if="detail.status == 'quoting' && (userStorage.get()?.role === 'supplier'||userStorage.get()?.role === 'admin')">***</a-descriptions-item>
           <a-descriptions-item label="修改人" v-else>{{ detail.modifier || '-' }}</a-descriptions-item>
           <a-descriptions-item label="修改时间">{{ detail.modifyTime || '-' }}</a-descriptions-item>
           <a-descriptions-item label="需求备注" :span="2">{{ detail.remark || '-' }}</a-descriptions-item>
@@ -161,12 +161,10 @@ interface StatusInfo {
 
 function getStatus(req: PurchaseRequirement): StatusInfo {
   switch (req.status) {
-    case 'awarded':
-      return { value: 'awarded', text: '已中标', color: 'green' }
-    case 'expired':
-      return { value: 'expired', text: '已截止', color: 'red' }
-    default:
+    case 'quoting':
       return { value: 'quoting', text: '报价中', color: 'blue' }
+    default:
+      return { value: 'expired', text: '已截止', color: 'red' }
   }
 }
 
@@ -332,8 +330,8 @@ function goQuotation(req: PurchaseRequirement): void {
 .search-card :deep(.ant-input:focus),
 .search-card :deep(.ant-select-focused .ant-select-selector),
 .search-card :deep(.ant-picker-focused) {
-  border-color: #1677ff !important;
-  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1) !important;
+  /* border-color: #1677ff !important;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1) !important; */
 }
 
 .search-card :deep(.ant-btn-primary) {

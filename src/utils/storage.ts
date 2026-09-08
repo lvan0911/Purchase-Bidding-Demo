@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import type { AwardResult, PurchaseRequirement, Quotation, UserAccount, UserInfo } from '@/types'
+import type { AwardResult, PurchaseRequirement, Quotation, QuoteItem, UserAccount, UserInfo } from '@/types'
 
 const KEY_TOKEN = 'pb_demo_token'
 const KEY_USER = 'pb_demo_user'
@@ -7,6 +7,7 @@ const KEY_REQUIREMENTS = 'pb_demo_requirements'
 const KEY_QUOTATIONS = 'pb_demo_quotations'
 const KEY_AWARDS = 'pb_demo_awards'
 const KEY_ACCOUNTS = 'pb_demo_accounts'
+const KEY_QUOTATION_DRAFT = 'pb_demo_quotation_draft_'
 
 function read<T>(key: string): T | null {
   const raw = localStorage.getItem(key)
@@ -125,6 +126,29 @@ export const quotationStorage = {
         .list()
         .find((q) => q.quotePerson === person && q.requirementId === requirementId) ?? null
     )
+  },
+}
+
+/** 报价草稿（暂存）结构 */
+export interface QuotationDraft {
+  requirementId: number
+  quotePerson: string
+  confirmDeliverDate: string | null
+  quoteRemark: string
+  items: QuoteItem[]
+  savedAt: string
+}
+
+/** 报价草稿存储（按 requirementId 区分，每个需求一份草稿） */
+export const quotationDraftStorage = {
+  get(requirementId: number): QuotationDraft | null {
+    return read<QuotationDraft>(`${KEY_QUOTATION_DRAFT}${requirementId}`)
+  },
+  save(draft: QuotationDraft): void {
+    write(`${KEY_QUOTATION_DRAFT}${draft.requirementId}`, draft)
+  },
+  remove(requirementId: number): void {
+    localStorage.removeItem(`${KEY_QUOTATION_DRAFT}${requirementId}`)
   },
 }
 

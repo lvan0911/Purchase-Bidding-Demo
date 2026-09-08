@@ -137,7 +137,7 @@
             </template>
             <span v-else class="rank-mask">报价截止后排名</span>
           </a-descriptions-item>
-          <a-descriptions-item label="供应商名称">{{ detailQuote.supplierName || '-' }}</a-descriptions-item>
+          <a-descriptions-item label="供应商名称">{{ detailQuote.awardedSupplierName || '-' }}</a-descriptions-item>
           <a-descriptions-item label="报价人">{{ detailQuote.quotePerson || '-' }}</a-descriptions-item>
           <a-descriptions-item label="报价金额">
             <template v-if="!detailQuote.expired">

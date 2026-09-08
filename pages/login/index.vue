@@ -44,7 +44,7 @@
           </a-button>
         </a-form-item>
       </a-form>
-      <p class="login-tip">Demo 演示环境：任意用户名密码均可登录</p>
+      <p class="login-tip">Demo 演示环境，内容仅供参考</p>
     </div>
   </div>
 </template>

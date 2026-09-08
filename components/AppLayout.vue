@@ -171,7 +171,6 @@ async function onUserMenuClick({ key }: { key: string }): Promise<void> {
 .app-header-inner {
   position: relative;
   width: 100%;
-  max-width: 1920px;
   margin: 0 auto;
   height: 68px;
   display: flex;

@@ -19,7 +19,7 @@ export default defineConfig({
     open: false,
     proxy: {
       '/api': {
-        target: 'http://rfq.auto-fam.com', // 生产环境
+        target: 'http://rfq.auto-fam.com', // 生产环境域名
         // target: 'http://192.168.110.7:8080', 王健 本地域名
         changeOrigin: true,
       },
